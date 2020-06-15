@@ -1,0 +1,108 @@
+-- Topstuff-------------
+entrypoints Prog ;
+
+Program.   Prog ::= [TopDef] ;
+
+separator nonempty TopDef "" ;
+
+Library_dec. TopDef ::= "LIBRARY " Ident; 
+
+Library_use. TopDef ::= "USE" Ident ; 
+
+-- Entity ---------
+
+Entity.  TopDef ::= "ENTITY" Ident "IS" "PORT" "(" [ Ports ] ")" ";" "END" "ENTITY" Ident;
+
+separator Ports ";" ;
+
+Inport.      Ports ::=  Ident ":" "IN" Type ;
+
+Outport.   Ports ::=  Ident ":" "OUT" Type ;
+
+Inoutport.    Ports ::=  Ident ":" "INOUT" Type ;
+
+-- Architecture --------------
+
+Arch. TopDef  ::= "ARCHITECTURE" Ident "OF" Ident "IS" [pre_begin_statements] "BEGIN" [post_begin_statements] "END" "ARCHITECTURE" Ident ";" ; 
+
+-- pre_begin_statements --------
+
+signal. pre_begin_statements ::= "SIGNAL" Ident ":" Type ";" | "SIGNAL" Ident ":" Type ":=" String ";" | "SIGNAL" Ident ":" Type ":=" Integer ";" ;
+
+constant. pre_begin_statements ::= "CONSTANT" Ident ":" Type ";" | "CONSTANT" Ident ":" Type ":=" String ";" | "CONSTANT" Ident ":" Type ":=" Integer ";" ;
+
+Component. pre_begin_statements ::= "COMPONENT" Ident "IS" "PORT" "(" [Ports] ")" ";" "END" "COMPONENT" Ident ";" ;
+
+--- post_begin_statements -----------------
+
+concurrent_stm. post_begin_statements ::= concurrent_statement ;
+
+port_map. post_begin_statements ::= Ident ":" "COMPONENT" Ident "PORT" "MAP" "(" [pmap_stm] ")" ";" ;
+
+-- concurrent_statements ------------
+
+concurrent_assignment. concurrent_statement ::= exp "<=" exp ";" ;
+
+concurrent_after_assignment. concurrent_statement ::= exp "<="  exp, [ass_statements] ";" ;
+
+separator ass_statements = "," ;
+
+ass_statement. ass_statements ::= exp "AFTER" Integer Ident ; -- Ident must be a timeunit.
+
+when. concurrent_statement ::= exp "<=" [when_part] ";" ;
+
+separator when_part "" ;
+
+int_when. when_part ::= exp "=" exp "else" ;
+
+process. concurrent_statement ::= "process" "(" [sensitivities] ")" "BEGIN" [sequential_statement] "END PROCESS" ";" ;
+
+separator sensitivities "," ;
+
+sensitivity. sensitivities ::= Ident ;
+
+-- Sequential statements----------------
+
+case. sequential_statement ::= "CASE" exp "IS" [whens] "END CASE" ";" ;
+
+a_case. whens ::= "WHEN" exp "=>" [sequential_statement];
+
+separator sequential_statement  "" ;
+
+if. sequential_statement ::= "IF" exp "=" exp "THEN" [sequential_statement] "END IF" ";" ; --this is really ugly and shoudl be done better
+
+if_else. sequential_statement ::= "IF" exp "=" exp "THEN" [sequential_statement] "ELSE" [sequential_statement] "END IF" ";" ; --this is really ugly and shoudl be done better
+
+wait_for. sequential_statement ::= "WAIT FOR" Integer Ident ";"; --Ident must be a time unit
+
+seq_assignment. sequential_statement ::= exp "<=" exp ";" ;
+
+-- Expressions ------------------
+
+coercions Exp 3 ;
+
+identifier. exp3 ::= Ident ;
+
+string. exp3 ::= String ;
+
+integer. exp3 ::= Integer ;
+
+vector_ref. exp2 ::= identifier "(" Integer ")" ; -- integer for now for simplicity
+
+add. exp1 ::= exp1 "+" exp2 ;
+
+sub. exp1 ::= exp1 "-" exp2 ;
+
+NOT. exp ::= NOT exp1 ;
+
+cmp. exp1 ::= exp1 cmpop exp2 ;
+
+equal.  cmpop ::= "=" ;
+
+less.  cmpop ::= "<" ;
+
+more.  cmpop ::= ">" ;
+
+
+
+
