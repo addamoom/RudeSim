@@ -5,13 +5,15 @@ Program.   Prog ::= [TopDef] ;
 
 separator nonempty TopDef "" ;
 
-Library_dec. TopDef ::= "LIBRARY " Ident; 
+Library_Dec. TopDef ::= "LIBRARY " Ident ";" ; 
 
-Library_use. TopDef ::= "USE" Ident ; 
+Library_Use. TopDef ::= "USE" Ident "." Ident "." Ident ";" ; -- Really bad but i wont bother with proper library support
+
+-- Library_Use. TopDef ::= "USE" [Ident]";" ; --probably a better way to do it with . as separator but will generate more code
 
 -- Entity ---------
 
-Entity.  TopDef ::= "ENTITY" Ident "IS" "PORT" "(" [ Ports ] ")" ";" "END" "ENTITY" Ident;
+Entity.  TopDef ::= "ENTITY" Ident "IS" "PORT" "(" [ Ports ] ")" ";" "END" "ENTITY" Ident ";" ;
 
 separator Ports ";" ;
 
@@ -23,86 +25,114 @@ Inoutport.    Ports ::=  Ident ":" "INOUT" Type ;
 
 -- Architecture --------------
 
-Arch. TopDef  ::= "ARCHITECTURE" Ident "OF" Ident "IS" [pre_begin_statements] "BEGIN" [post_begin_statements] "END" "ARCHITECTURE" Ident ";" ; 
+Arch. TopDef  ::= "ARCHITECTURE" Ident "OF" Ident "IS" [Pre_begin_statements] "BEGIN" [Post_begin_statements] "END" "ARCHITECTURE" Ident ";" ; 
 
--- pre_begin_statements --------
+separator Pre_begin_statements "" ;
 
-signal. pre_begin_statements ::= "SIGNAL" Ident ":" Type ";" | "SIGNAL" Ident ":" Type ":=" String ";" | "SIGNAL" Ident ":" Type ":=" Integer ";" ;
+separator Post_begin_statements "" ;
 
-constant. pre_begin_statements ::= "CONSTANT" Ident ":" Type ";" | "CONSTANT" Ident ":" Type ":=" String ";" | "CONSTANT" Ident ":" Type ":=" Integer ";" ;
+-- Pre_begin_statements --------
 
-Component. pre_begin_statements ::= "COMPONENT" Ident "IS" "PORT" "(" [Ports] ")" ";" "END" "COMPONENT" Ident ";" ;
+Signal_Decl. Pre_begin_statements ::= "SIGNAL" Ident ":" Type  ";"  ; 
 
---- post_begin_statements -----------------
+Signal_Decl_W_Assign. Pre_begin_statements ::= "SIGNAL" Ident ":" Type ":=" Literal ";" ;
 
-concurrent_stm. post_begin_statements ::= concurrent_statement ;
+Constant_Decl. Pre_begin_statements ::= "CONSTANT" Ident ":" Type ";" ;
 
-port_map. post_begin_statements ::= Ident ":" "COMPONENT" Ident "PORT" "MAP" "(" [pmap_stm] ")" ";" ;
+Constant_Decl_W_Assign. Pre_begin_statements ::= "CONSTANT" Ident ":" Type ":=" Literal ";" ;
 
--- concurrent_statements ------------
+Component. Pre_begin_statements ::= "COMPONENT" Ident "IS" "PORT" "(" [Ports] ")" ";" "END" "COMPONENT" Ident ";" ;
 
-concurrent_assignment. concurrent_statement ::= exp "<=" exp ";" ;
+--- Post_begin_statements -----------------
 
-concurrent_after_assignment. concurrent_statement ::= exp "<="  exp, [ass_statements] ";" ;
+Concurrent_Stm. Post_begin_statements ::= Concurrent_statement ;
 
-separator ass_statements = "," ;
+Port_Map. Post_begin_statements ::= Ident ":" "COMPONENT" Ident "PORT" "MAP" "(" [Pmap_stm] ")" ";" ;
 
-ass_statement. ass_statements ::= exp "AFTER" Integer Ident ; -- Ident must be a timeunit.
+separator Pmap_stm "," ;
 
-when. concurrent_statement ::= exp "<=" [when_part] ";" ;
+Port_Map_Internal_Statement. Pmap_stm ::= Ident "=>" Ident ;
 
-separator when_part "" ;
+-- Concurrent_statements ------------
 
-int_when. when_part ::= exp "=" exp "else" ;
+Concurrent_Assignment. Concurrent_statement ::= Exp "<=" Exp ";" ;
 
-process. concurrent_statement ::= "process" "(" [sensitivities] ")" "BEGIN" [sequential_statement] "END PROCESS" ";" ;
+Concurrent_Assignment_W_AFTER. Concurrent_statement ::= Exp "<="  Exp "," [Ass_statements] ";" ;
 
-separator sensitivities "," ;
+separator Ass_statements "," ;
 
-sensitivity. sensitivities ::= Ident ;
+After_Component. Ass_statements ::= Exp "AFTER" Integer Ident ; -- Ident must be a timeunit.
+
+When_Statement. Concurrent_statement ::= Exp "<=" [When_part] ";" ;
+
+separator When_part "" ;
+
+When_Component. When_part ::= Exp "WHEN" Ident "=" Exp "ELSE" ;
+
+When_Finisher. When_part ::= Exp "WHEN" Ident "=" Exp ;
+
+Process_Statement. Concurrent_statement ::= Ident ":" "process" "(" [Ident] ")" "BEGIN" [Sequential_statement] "END PROCESS" ";" ;
+
+separator Ident "," ;
+
 
 -- Sequential statements----------------
 
-case. sequential_statement ::= "CASE" exp "IS" [whens] "END CASE" ";" ;
+Case_Statement. Sequential_statement ::= "CASE" Exp "IS" [Whens] "END CASE" ";" ;
 
-a_case. whens ::= "WHEN" exp "=>" [sequential_statement];
+separator Whens  "" ;
 
-separator sequential_statement  "" ;
+Case_Case. Whens ::= "WHEN" Exp "=>" [Sequential_statement]; -- Check if Exp is an identifier OTHERS
 
-if. sequential_statement ::= "IF" exp "=" exp "THEN" [sequential_statement] "END IF" ";" ; --this is really ugly and shoudl be done better
+separator Sequential_statement  "" ;
 
-if_else. sequential_statement ::= "IF" exp "=" exp "THEN" [sequential_statement] "ELSE" [sequential_statement] "END IF" ";" ; --this is really ugly and shoudl be done better
+If_Statement. Sequential_statement ::= "IF" Exp "=" Exp "THEN" [Sequential_statement] "END IF" ";" ; --this is really ugly and shoudl be done better
 
-wait_for. sequential_statement ::= "WAIT FOR" Integer Ident ";"; --Ident must be a time unit
+If_Else_Statement. Sequential_statement ::= "IF" Exp "=" Exp "THEN" [Sequential_statement] "ELSE" [Sequential_statement] "END IF" ";" ; --this is really ugly and shoudl be done better
 
-seq_assignment. sequential_statement ::= exp "<=" exp ";" ;
+Wait_For_Statement. Sequential_statement ::= "WAIT FOR" Integer Ident ";"; --Ident must be a time unit
+
+Seq_Assignment. Sequential_statement ::= Exp "<=" Exp ";" ;
 
 -- Expressions ------------------
-
+ 
 coercions Exp 3 ;
 
-identifier. exp3 ::= Ident ;
+E_Identifier. Exp3 ::= Ident ;
 
-string. exp3 ::= String ;
+E_String. Exp3 ::= String ;
 
-integer. exp3 ::= Integer ;
+E_Integer. Exp3 ::= Integer ;
 
-vector_ref. exp2 ::= identifier "(" Integer ")" ; -- integer for now for simplicity
+E_Std_Logic. Exp3 ::= Char ;
 
-add. exp1 ::= exp1 "+" exp2 ;
+E_Vector_Ref. Exp2 ::= Ident "(" Integer ")" ; -- integer for now for simplicity
 
-sub. exp1 ::= exp1 "-" exp2 ;
+E_Add. Exp1 ::= Exp1 "+" Exp2 ;
 
-NOT. exp ::= NOT exp1 ;
+E_Sub. Exp1 ::= Exp1 "-" Exp2 ;
 
-cmp. exp1 ::= exp1 cmpop exp2 ;
+E_Not. Exp ::= "NOT" Exp1 ;
 
-equal.  cmpop ::= "=" ;
+E_Cmp. Exp1 ::= Exp1 Cmpop Exp2 ;
 
-less.  cmpop ::= "<" ;
+E_Equal.  Cmpop ::= "=" ;
 
-more.  cmpop ::= ">" ;
+E_Less.  Cmpop ::= "<" ;
 
+E_More.  Cmpop ::= ">" ;
+
+-- Types ---------------
+
+Lit_string. Literal ::= String ; 
+
+Lit_int. Literal ::= Integer ; 
+
+T_std_logic. Type ::= "STD_LOGIC" ;
+
+T_std_logic_vector. Type ::= "STD_LOGIC_VECTOR" ;
+
+T_integer. Type ::= "INTEGER" ;
 
 
 
