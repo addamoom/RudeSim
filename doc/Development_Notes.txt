@@ -78,8 +78,6 @@ The VCD file can then be displayed using GTKWave, and the simulator is finished.
 
 -- Current Progress ---------------------------------------
 2020-06-18
-THe simulator have a parser and a skeleton for a typechecker.
-THe abstract syntax appears to be correct in some cases, but no extensive tesing has been done.
-For now i will jus work on simulating the simple file 
-
-I think we will ignore processes at first, i havent thought out all the details about how they should work
+The simulator have a parser and a skeleton for a typechecker.
+The abstract syntax appears to be correct in some cases, but no extensive tesing has been done.
+For now i think we will just work on simulating the simple file in the folder tests, and ignore other language constructs.
