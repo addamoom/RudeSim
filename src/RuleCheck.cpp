@@ -32,6 +32,7 @@ std::vector<std::string> entities; //List of entities in the file.
 std::vector<ArchType> archs;       //List of Architectures in file.
 std::vector<PortType> entity_ports;  //List of ports in the entity scope. (scopes not implemented yet)
 std::vector<std::string>  symbols; //list of all declared symbols, e.g. ports and signals, in current scope. (scope not implemented yet)
+
 Signal_Types visitedType;
 
 int RuleCheck::startRuleCheck(Visitable *t)
@@ -46,6 +47,7 @@ void RuleCheck::checkSymbolUniqueness(std::string s)
     {
         if (x == s){
             std::cout << REDTEXT << "ERROR: " << NORMTEXT << "Symbol " + s + " declared more than once!" << std::endl;
+            returnvalue = 1;
         }
     }
 }
