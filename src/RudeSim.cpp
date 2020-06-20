@@ -1,11 +1,12 @@
-// DEBUG parameters, turn false to disable
-#define PRINT_DEBUG_INFO
+// DEBUG parameters, remove to disable
+#define PRINT_DEBUG_INFO 
 
 #include <stdio.h>
-#include "Parser.H"
-#include "Printer.H"
-#include "Absyn.H"
-
+#include "../Parser.H"
+#include "../Printer.H"
+#include "../Absyn.H"
+#include "RuleCheck.H"
+#include <iostream>
 int main(int argc, char **argv)
 {
     FILE *input;
@@ -43,7 +44,7 @@ int main(int argc, char **argv)
 
     RuleCheck t = RuleCheck();
 
-    if (t.RuleCheck(parse_tree) == 0)
+    if (t.startRuleCheck(parse_tree) == 0)
     {
         std::cout << "Input is up to spec. Moving on to simulate!" << std::endl;
     }
