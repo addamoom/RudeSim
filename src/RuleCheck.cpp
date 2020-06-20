@@ -94,7 +94,7 @@ void RuleCheck::visitEntity(Entity *entity)
     //visitIdent(entity->ident_2);
     if (entity->ident_1 != entity->ident_2)
     {
-         printErrorMessage( "END label in Entity " << entity->ident_1 << " did not match entity name!");
+         printErrorMessage( "END label in Entity " + entity->ident_1 +" did not match entity name!");
         returnvalue = 1;
     }
 
@@ -121,13 +121,13 @@ void RuleCheck::visitArch(Arch *arch)
 
     if (arch->ident_1 != arch->ident_3)
     {
-        printErrorMessage("END label in Arch " << arch->ident_1 << " did not match arch!");
+        printErrorMessage("END label in Arch " + arch->ident_1 + " did not match arch!");
         returnvalue = 1;
     }
 
     if (std::find(entities.begin(), entities.end(), arch->ident_2) == entities.end())
-    { //works since end() is not a element in the vector, but rather the hypoteticall nex one.
-        printErrorMessage("The Entity " << arch->ident_2 << " pointed to by architecture " << arch->ident_1 << " does not exist (yet)!" );
+    {
+        printErrorMessage("The Entity " + arch->ident_2 + " pointed to by architecture " + arch->ident_1 + " does not exist (yet)!" );
     }
 
     for (ArchType a : archs)
@@ -197,6 +197,9 @@ void RuleCheck::visitSignal_Decl(Signal_Decl *signal_decl)
 
     visitIdent(signal_decl->ident_);
     signal_decl->type_->accept(this);
+    
+    
+    symbols.push_back(signal_decl->ident_);
 }
 
 void RuleCheck::visitSignal_Decl_W_Assign(Signal_Decl_W_Assign *signal_decl_w_assign)
