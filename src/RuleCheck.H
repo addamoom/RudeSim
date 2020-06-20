@@ -39,6 +39,16 @@ struct PortType
         direction = d;
     }
 };
+struct SignalType
+{
+    std::string identifier;
+    std::string type;
+
+    SignalType(std::string i, std::string t){
+        identifier = i;
+        type = t;
+    }
+};
 
 class RuleCheck : public Visitor
 {
@@ -125,6 +135,7 @@ public:
 
 private:
     void checkSymbolUniqueness(std::string s);
+    void printErrorMessage(std::string s);
 };
 
 #endif

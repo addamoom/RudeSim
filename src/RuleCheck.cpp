@@ -8,8 +8,13 @@
 #include <iostream>
 #include <algorithm>
 
-#define REDTEXT "\033[1;31m"
-#define NORMTEXT "\033[0m"
+#define REDTEXT "\033[1;31m" //Use for errors
+#define YELLOWTEXT "\033[1;33m" //Use for warnings
+#define GREENTEXT "\033[1;32m" //Use for Sucesses
+#define NORMTEXT "\033[0m"  //Reset text back to normal
+
+
+
  
 void RuleCheck::visitProg(Prog *t) {}                                   //abstract class
 void RuleCheck::visitTopDef(TopDef *t) {}                               //abstract class
@@ -27,11 +32,13 @@ void RuleCheck::visitCmpop(Cmpop *t) {}                                 //abstra
 void RuleCheck::visitLiteral(Literal *t) {}                             //abstract class
 void RuleCheck::visitType(Type *t) {}                                   //abstract class
 
-int returnvalue = 0;               // set this to one if errors are detected.
-std::vector<std::string> entities; //List of entities in the file.
-std::vector<ArchType> archs;       //List of Architectures in file.
-std::vector<PortType> entity_ports;  //List of ports in the entity scope. (scopes not implemented yet)
-std::vector<std::string>  symbols; //list of all declared symbols, e.g. ports and signals, in current scope. (scope not implemented yet)
+int returnvalue = 0;                // set this to one if errors are detected.
+std::vector<std::string> entities;  //List of entities in the file.
+std::vector<ArchType> archs;        //List of Architectures in file.
+std::vector<PortType> entity_ports; //List of ports in the current scope. (scopes not implemented yet)
+std::vector<std::string>  symbols;  //List of all declared symbols, e.g. ports and signals, in current scope. (scope not implemented yet)
+std::vector<SignalType>  signals;   //List of all declared Signals in current scope (scopes not implemented yet)
+
 
 Signal_Types visitedType;
 
@@ -46,12 +53,15 @@ void RuleCheck::checkSymbolUniqueness(std::string s)
     for (std::string x : symbols)
     {
         if (x == s){
-            std::cout << REDTEXT << "ERROR: " << NORMTEXT << "Symbol " + s + " declared more than once!" << std::endl;
+            printErrorMessage("Symbol " + s + " declared more than once!");
             returnvalue = 1;
         }
     }
 }
-
+void RuleCheck::printErrorMessage(std::string s)
+{
+    std::cout << REDTEXT << "ERROR: " << NORMTEXT << s << std::endl;
+}
 
 void RuleCheck::visitProgram(Program *program)
 {
@@ -84,7 +94,7 @@ void RuleCheck::visitEntity(Entity *entity)
     //visitIdent(entity->ident_2);
     if (entity->ident_1 != entity->ident_2)
     {
-        std::cout << REDTEXT << "ERROR: " << NORMTEXT <<+ "END label in Entity " << entity->ident_1 << " did not match entity name!" << std::endl;
+         printErrorMessage( "END label in Entity " << entity->ident_1 << " did not match entity name!");
         returnvalue = 1;
     }
 
@@ -92,7 +102,7 @@ void RuleCheck::visitEntity(Entity *entity)
     {
         if (s == entity->ident_1)
         {
-            std::cout << "Error: Several entities have the same label" << std::endl;
+            printErrorMessage("Several entities have the same label");
             returnvalue = 1;
         }
     }
@@ -111,20 +121,20 @@ void RuleCheck::visitArch(Arch *arch)
 
     if (arch->ident_1 != arch->ident_3)
     {
-        std::cout << "Error: END label in Arch " << arch->ident_1 << " did not match arch!" << std::endl;
+        printErrorMessage("END label in Arch " << arch->ident_1 << " did not match arch!");
         returnvalue = 1;
     }
 
     if (std::find(entities.begin(), entities.end(), arch->ident_2) == entities.end())
     { //works since end() is not a element in the vector, but rather the hypoteticall nex one.
-        std::cout << "Error: The Entity" << arch->ident_2 << " pointed to by architecture " << arch->ident_1 << " does not exist (yet)!" << std::endl;
+        printErrorMessage("The Entity " << arch->ident_2 << " pointed to by architecture " << arch->ident_1 << " does not exist (yet)!" );
     }
 
     for (ArchType a : archs)
     {
         if ((a.label == arch->ident_1) && (a.entity == arch->ident_2))
         {
-            std::cout << "Error: Several architectures of the same entity share labels" << std::endl;
+            printErrorMessage( "Several architectures of the same entity share labels");
             returnvalue = 1;
         }
     }
@@ -140,7 +150,7 @@ void RuleCheck::visitArch(Arch *arch)
 void RuleCheck::visitInport(Inport *inport)
 {
     /* Needs checks for:
-        - same port declared more than once
+        - same port declared more than once. DONE
     everything else is handled by lexer/parser since i made putting the wrong type a syntax error
     */
 
@@ -153,7 +163,10 @@ void RuleCheck::visitInport(Inport *inport)
 
 void RuleCheck::visitOutport(Outport *outport)
 {
-    /* Code For Outport Goes Here */
+    /*Needs checks for: 
+        - same port declared more than once. DONE
+    everything else is handled by lexer/parser since i made putting the wrong type a syntax error
+    */
 
     visitIdent(outport->ident_);
     outport->type_->accept(this);
@@ -165,7 +178,10 @@ void RuleCheck::visitOutport(Outport *outport)
 
 void RuleCheck::visitInoutport(Inoutport *inoutport)
 {
-    /* Code For Inoutport Goes Here */
+    /*Needs checks for: 
+        - same port declared more than once. DONE
+    everything else is handled by lexer/parser since i made putting the wrong type a syntax error
+    */
 
     visitIdent(inoutport->ident_);
     inoutport->type_->accept(this);
