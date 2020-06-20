@@ -19,3 +19,5 @@ BEGIN
     e <= '0' ;
     d <= NOT e;
 END ARCHITECTURE test ;
+
+

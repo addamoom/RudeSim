@@ -57,3 +57,6 @@ Test.o: Test.C Parser.H Printer.H Absyn.H
 TestSyntax: ${OBJS} Test.o
 	${CC} ${CCFLAGS} ${OBJS} Test.o -o TestSyntax
 	cat tests/testfile.vhdl | ./TestSyntax
+
+TestRudeSim: RudeSim
+	cat tests/testfile.vhdl | ./RudeSim
