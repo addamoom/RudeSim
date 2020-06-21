@@ -6,6 +6,7 @@
 #include "../Printer.H"
 #include "../Absyn.H"
 #include "RuleCheck.H"
+#include "Simulator.H"
 #include <iostream>
 int main(int argc, char **argv)
 {
@@ -54,7 +55,17 @@ int main(int argc, char **argv)
         return 2;
     }
 
-    //place simualator here!
+    Simulator sim = Simulator();
+
+    if (sim.startSimulation(parse_tree) == 0)
+    {
+        std::cout << "Simulation finished sucsessfully" << std::endl;
+    }
+    else
+    {
+        std::cerr << "Simulator was unsuccessfull" << std::endl;
+        return 2;
+    }
 
     return 0;
 }

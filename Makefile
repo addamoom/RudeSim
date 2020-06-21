@@ -7,7 +7,7 @@ BISON_OPTS = -t -pvhdl
 BNFC = bnfc
 OPTIMISATION_FLAGS = -O2
 
-OBJS = Absyn.o Lexer.o Parser.o Printer.o RuleCheck.o #Simulator.o
+OBJS = Absyn.o Lexer.o Parser.o Printer.o RuleCheck.o Simulator.o
 
 .PHONY: clean
 
@@ -42,10 +42,10 @@ Skeleton.o: Skeleton.C Skeleton.H Absyn.H
 RuleCheck.o: src/RuleCheck.cpp src/RuleCheck.H Absyn.H Absyn.C
 	${CC} ${CCFLAGS} -c src/RuleCheck.cpp
 
-#Simulator.o: src/Simulator.cpp src/Simulator.h Absyn.H Absyn.C
-#	${CC} ${CCFLAGS} -c src/Simulator.cpp
+Simulator.o: src/Simulator.cpp src/Simulator.H Absyn.H Absyn.C
+	${CC} ${CCFLAGS} -c src/Simulator.cpp
 
-RudeSim.o: src/RudeSim.cpp Parser.H Printer.H Absyn.H Absyn.C src/RuleCheck.cpp src/RuleCheck.H #src/Simulator.cpp src/Simulator.h
+RudeSim.o: src/RudeSim.cpp Parser.H Printer.H Absyn.H Absyn.C src/RuleCheck.cpp src/RuleCheck.H src/Simulator.cpp src/Simulator.H
 	${CC} ${CCFLAGS} -c src/RudeSim.cpp
 
 RudeSim: ${OBJS} RudeSim.o
