@@ -1,5 +1,5 @@
 CC = g++
-CCFLAGS = -g -W -Wall
+CCFLAGS = -g -W -Wall -Wno-unused-parameter -Wno-write-strings
 FLEX = flex
 FLEX_OPTS = -Pvhdl
 BISON = bison

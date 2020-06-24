@@ -5,6 +5,8 @@
    algorithms to use context information differently. */
 
 #include "RuleCheck.H"
+#include "Types.H"
+
 #include <iostream>
 #include <algorithm>
 
@@ -144,7 +146,7 @@ void RuleCheck::visitInport(Inport *inport)
         - same port declared more than once. DONE
     everything else is handled by lexer/parser since i made putting the wrong type a syntax error
     */
-
+   
     visitIdent(inport->ident_);
     inport->type_->accept(this);
     checkSymbolUniqueness(inport->ident_);

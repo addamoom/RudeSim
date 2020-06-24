@@ -7,7 +7,12 @@
 #include "../Absyn.H"
 #include "RuleCheck.H"
 #include "Simulator.H"
+#include "Types.H"
 #include <iostream>
+
+std::vector<SignalType> rc_signals;
+std::vector<PortType> rc_ports;
+
 int main(int argc, char **argv)
 {
     FILE *input;
@@ -43,9 +48,9 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    RuleCheck t = RuleCheck();
+    RuleCheck ruleChecker = RuleCheck();
 
-    if (t.startRuleCheck(parse_tree) == 0)
+    if (ruleChecker.startRuleCheck(parse_tree) == 0)
     {
         std::cout << "Input is up to spec. Moving on to simulate!" << std::endl;
     }
@@ -54,6 +59,8 @@ int main(int argc, char **argv)
         std::cerr << "Rulechecker faced an error parsing the file, stopping the simulator" << std::endl;
         return 2;
     }
+    rc_signals = ruleChecker.signals;
+    rc_ports = ruleChecker.entity_ports;
 
     Simulator sim = Simulator();
 

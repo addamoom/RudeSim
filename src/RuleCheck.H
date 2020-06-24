@@ -3,52 +3,8 @@
 /* You might want to change the above name. */
 
 #include "../Absyn.H"
+#include "Types.H"
 
-enum Signal_Types
-{
-    STD_LOGIC,
-    STD_LOGIC_VECTOR,
-    INTEGER
-};
-enum Port_direction
-{
-    IN,
-    OUT,
-    INOUT
-};
-
-struct ArchType
-{
-    std::string label;
-    std::string entity;
-
-    ArchType(std::string l, std::string e){
-        label = l;
-        entity = e;
-    }
-};
-struct PortType
-{
-    std::string identifier;
-    Signal_Types type;
-    Port_direction direction;
-
-    PortType(std::string i, Signal_Types t, Port_direction d){
-        identifier = i;
-        type = t;
-        direction = d;
-    }
-};
-struct SignalType
-{
-    std::string identifier;
-    std::string type;
-
-    SignalType(std::string i, std::string t){
-        identifier = i;
-        type = t;
-    }
-};
 
 class RuleCheck : public Visitor
 {
@@ -133,13 +89,16 @@ public:
 
     int startRuleCheck(Visitable *t);
 
+    std::vector<SignalType>  signals;   //List of all declared Signals in current scope (scopes not implemented yet)
+    std::vector<PortType> entity_ports; //List of ports in the current scope. (scopes not implemented yet)
+
 private:
     int returnvalue = 0;                // set this to one if errors are detected.
     std::vector<std::string> entities;  //List of entities in the file.
     std::vector<ArchType> archs;        //List of Architectures in file.
-    std::vector<PortType> entity_ports; //List of ports in the current scope. (scopes not implemented yet)
+    
     std::vector<std::string>  symbols;  //List of all declared symbols, e.g. ports and signals, in current scope. (scope not implemented yet)
-    std::vector<SignalType>  signals;   //List of all declared Signals in current scope (scopes not implemented yet)
+
     Signal_Types visitedType;
 
     void checkSymbolUniqueness(std::string s);
