@@ -4,6 +4,7 @@
 
 #include "../Absyn.H"
 #include "Types.H"
+#include <map>
 
 class Simulator : public Visitor
 {
@@ -66,6 +67,7 @@ public:
     void visitE_More(E_More *p);
     void visitLit_string(Lit_string *p);
     void visitLit_int(Lit_int *p);
+    void visitLit_char(Lit_char *lit_char);
     void visitT_std_logic(T_std_logic *p);
     void visitT_std_logic_vector(T_std_logic_vector *p);
     void visitT_integer(T_integer *p);
@@ -87,13 +89,13 @@ public:
     void visitIdent(Ident x);
 
     int startSimulation(Visitable *t);
-    std::vector<simulation_state> simulation_states;
 
 private:
     int returnvalue = 0;                // set this to one if errors are detected.
-    simulation_state init_state;
+
     std::vector<EntityType> entities;  //List of entities in the file.
-    
+    void printState(simulation_state s);
+    bool check_if_all_signals_are_updated(std::map<std::string, bool> t);
 };
 
 #endif

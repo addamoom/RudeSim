@@ -126,11 +126,13 @@ E_More.  Cmpop ::= ">" ;
 
 Lit_string. Literal ::= String ; 
 
-Lit_int. Literal ::= Integer ; 
+Lit_int. Literal ::= Integer ;
+
+Lit_char. Literal ::= Char ;
 
 T_std_logic. Type ::= "STD_LOGIC" ;
 
-T_std_logic_vector. Type ::= "STD_LOGIC_VECTOR" ;
+T_std_logic_vector. Type ::= "STD_LOGIC_VECTOR" "(" Integer "DOWNTO" Integer ")";
 
 T_integer. Type ::= "INTEGER" ;
 

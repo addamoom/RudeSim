@@ -13,11 +13,14 @@ END ENTITY testThing ;
 ARCHITECTURE test OF testThing IS
     SIGNAL e : STD_LOGIC ;
     SIGNAL f : STD_LOGIC ;
+    SIGNAL g : STD_LOGIC := '1';
 BEGIN
     f <= '1' ;
     c <= f ;
-    e <= '0' ;
     d <= NOT e;
+    e <= '0' ;
+    
+    
 END ARCHITECTURE test ;
 
 

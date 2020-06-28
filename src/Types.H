@@ -14,6 +14,12 @@ enum Port_direction
     OUT,
     INOUT
 };
+enum Expr_state
+{
+    VALUE,
+    SYMBOL,
+    UNRESOLVED
+};
 
 struct PortType
 {
@@ -61,6 +67,7 @@ struct EntityType
         label = l;
         ports = e;
     }
+    EntityType(){}
 };
 
 //Simulator datastructure
@@ -109,5 +116,10 @@ struct simulation_state
         integers = i;
         std_logic_vectors = slv;
     };
+    simulation_state(){
+        
+    }
 };
+
+
 #endif

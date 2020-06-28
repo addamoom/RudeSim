@@ -67,6 +67,7 @@ public:
     void visitE_More(E_More *p);
     void visitLit_string(Lit_string *p);
     void visitLit_int(Lit_int *p);
+    void visitLit_char(Lit_char *lit_char);
     void visitT_std_logic(T_std_logic *p);
     void visitT_std_logic_vector(T_std_logic_vector *p);
     void visitT_integer(T_integer *p);

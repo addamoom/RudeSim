@@ -15,8 +15,6 @@
 #define GREENTEXT "\033[1;32m" //Use for Sucesses
 #define NORMTEXT "\033[0m"  //Reset text back to normal
 
-
-
  
 void RuleCheck::visitProg(Prog *t) {}                                   //abstract class
 void RuleCheck::visitTopDef(TopDef *t) {}                               //abstract class
@@ -66,7 +64,7 @@ void RuleCheck::visitProgram(Program *program)
 void RuleCheck::visitLibrary_Dec(Library_Dec *library_dec)
 {
     /* Code For Library_Dec Goes Here */
-
+    
     //visitIdent(library_dec->ident_);
 }
 
@@ -85,6 +83,7 @@ void RuleCheck::visitEntity(Entity *entity)
 
     //visitIdent(entity->ident_1);
     //visitIdent(entity->ident_2);
+
     if (entity->ident_1 != entity->ident_2)
     {
          printErrorMessage( "END label in Entity " + entity->ident_1 +" did not match entity name!");
@@ -464,6 +463,14 @@ void RuleCheck::visitLit_int(Lit_int *lit_int)
     visitInteger(lit_int->integer_);
 }
 
+void RuleCheck::visitLit_char(Lit_char *lit_char)
+{
+  /* Code For Lit_char Goes Here */
+
+  visitChar(lit_char->char_);
+
+}
+
 void RuleCheck::visitT_std_logic(T_std_logic *t_std_logic)
 {
     /* Code For T_std_logic Goes Here */
@@ -472,8 +479,11 @@ void RuleCheck::visitT_std_logic(T_std_logic *t_std_logic)
 
 void RuleCheck::visitT_std_logic_vector(T_std_logic_vector *t_std_logic_vector)
 {
-    /* Code For T_std_logic_vector Goes Here */
-    visitedType = STD_LOGIC_VECTOR;
+  /* Code For T_std_logic_vector Goes Here */
+
+  visitInteger(t_std_logic_vector->integer_1);
+  visitInteger(t_std_logic_vector->integer_2);
+
 }
 
 void RuleCheck::visitT_integer(T_integer *t_integer)

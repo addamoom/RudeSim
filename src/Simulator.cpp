@@ -6,6 +6,8 @@
 
 #include "Simulator.H"
 #include "Types.H"
+#include <iostream>
+#include <map>
 
 void Simulator::visitProg(Prog *t) {}                                   //abstract class
 void Simulator::visitTopDef(TopDef *t) {}                               //abstract class
@@ -25,8 +27,51 @@ void Simulator::visitType(Type *t) {}                                   //abstra
 
 //extern std::vector<SignalType> rc_signals;
 //extern std::vector<PortType> rc_ports;
-std::vector<PortType> current_portlist;
-Signal_Types visitedType;
+std::vector<PortType> current_portlist; //holds temporary information about ports, which is then written into entity information
+Signal_Types visitedType;               //when a visit to a type occurs, this
+int visitedLitInt;
+char visitedLitChar;
+std::string visitedLitString;
+
+int simulation_time;         //time the simulation should run, in ps
+int simulation_steps = 1000; //no of discrete time steps in simulation.
+
+std::map<std::string, bool> symbolDoneTable;        //is the value of a symbol accurate in this time frame? always check this table before assigning
+std::vector<simulation_state> simulation_states;    //All the simulation states.
+simulation_state current_state;                     //
+int current_time;
+
+Expr_state visitedExprState;
+
+simulation_state init_state;
+bool Simulator::check_if_all_signals_are_updated(std::map<std::string, bool> t)
+{
+    for (auto t : symbolDoneTable)
+    {
+        if (!t.second)
+            return false;
+    }
+    return true;
+}
+
+void Simulator::printState(simulation_state s)
+{
+    std::cout << "std_logics:" << std::endl;
+    for (auto p : s.std_logics)
+    {
+        std::cout << p.identifier << "=" << p.value << std::endl;
+    }
+    std::cout << "std_logic_vectors:" << std::endl;
+    for (auto p : s.std_logic_vectors)
+    {
+        std::cout << p.identifier << "=" << p.value << std::endl;
+    }
+    std::cout << "Integers:" << std::endl;
+    for (auto p : s.integers)
+    {
+        std::cout << p.identifier << "=" << p.value << std::endl;
+    }
+}
 
 int Simulator::startSimulation(Visitable *t)
 {
@@ -61,29 +106,83 @@ void Simulator::visitLibrary_Use(Library_Use *library_use)
 void Simulator::visitEntity(Entity *entity)
 {
     /* Code For Entity Goes Here */
-    
+
     visitIdent(entity->ident_1);
     entity->listports_->accept(this);
     visitIdent(entity->ident_2);
 
-    entities.push_back(EntityType(entity->ident_1,current_portlist));
-    current_portlist.clear();  
+    entities.push_back(EntityType(entity->ident_1, current_portlist));
+    current_portlist.clear();
 }
 
 void Simulator::visitArch(Arch *arch)
 {
     /* Code For Arch Goes Here */
 
-    visitIdent(arch->ident_1);
-    visitIdent(arch->ident_2);
+    bool all_signals_are_updated;
+    EntityType current_entity;
+    int currentTime;
+    simulation_state current_state_copy;
+    //visitIdent(arch->ident_1);
+    //visitIdent(arch->ident_2);
+    //visitIdent(arch->ident_3);
+
+    //find current entity
+    for (auto e : entities)
+    {
+        if (e.label == arch->ident_2)
+        {
+            current_entity = e;
+        }
+    }
+
+    //add ports to state
+
+    for (auto p : current_entity.ports)
+    {
+        if (p.type == STD_LOGIC)
+        {
+            init_state.std_logics.push_back(std_logic_state(p.identifier, 'X'));
+        }
+        else if (p.type == STD_LOGIC_VECTOR)
+        {
+            init_state.std_logic_vectors.push_back(std_logic_vector_state(p.identifier, "X"));
+        }
+        else //INTEGER
+        {
+            init_state.integers.push_back(integer_state(p.identifier, -2147483648));
+        }
+    }
+
+    //add all Signal declarations to state
     arch->listpre_begin_statements_->accept(this);
-    //gather all signals and theri initial value in one place.
+    //done.
 
+    std::cout << "initialization state : " << std::endl;
+    printState(init_state);
 
+    //now all signals should be initialized. lets move on to simulation
 
-
-    arch->listpost_begin_statements_->accept(this);
-    visitIdent(arch->ident_3);
+    //for (int i = 1; i < simulation_steps + 1; i++)
+    //{
+    //    if(i == 1)
+    //        current_state = init_state;
+    //    else
+    //        current_state = simulation_states.at(i - 1);
+//
+    //    current_time = i * simulation_time / simulation_steps;
+//
+    //    while (!all_signals_are_updated)
+    //    {
+    //        current_state_copy = current_state;
+//
+    //        arch->listpost_begin_statements_->accept(this);
+    //        //all_signals_are_updated = check_if_all_signals_are_updated();
+//
+    //        //kontrollera currstate efter förändringar
+    //    
+    //    }
+    //}
 }
 
 void Simulator::visitInport(Inport *inport)
@@ -119,7 +218,18 @@ void Simulator::visitSignal_Decl(Signal_Decl *signal_decl)
 
     visitIdent(signal_decl->ident_);
     signal_decl->type_->accept(this);
-
+    if (visitedType == STD_LOGIC)
+    {
+        init_state.std_logics.push_back(std_logic_state(signal_decl->ident_, 'X'));
+    }
+    else if (visitedType == STD_LOGIC_VECTOR)
+    {
+        init_state.std_logic_vectors.push_back(std_logic_vector_state(signal_decl->ident_, "X"));
+    }
+    else //INTEGER
+    {
+        init_state.integers.push_back(integer_state(signal_decl->ident_, -2147483648));
+    }
 }
 
 void Simulator::visitSignal_Decl_W_Assign(Signal_Decl_W_Assign *signal_decl_w_assign)
@@ -129,16 +239,27 @@ void Simulator::visitSignal_Decl_W_Assign(Signal_Decl_W_Assign *signal_decl_w_as
     visitIdent(signal_decl_w_assign->ident_);
     signal_decl_w_assign->type_->accept(this);
     signal_decl_w_assign->literal_->accept(this);
+    if (visitedType == STD_LOGIC)
+    {
+        init_state.std_logics.push_back(std_logic_state(signal_decl_w_assign->ident_, visitedLitChar));
+    }
+    else if (visitedType == STD_LOGIC_VECTOR)
+    {
+        init_state.std_logic_vectors.push_back(std_logic_vector_state(signal_decl_w_assign->ident_, visitedLitString));
+    }
+    else //INTEGER
+    {
+        init_state.integers.push_back(integer_state(signal_decl_w_assign->ident_, visitedLitInt));
+    }
 }
 
 void Simulator::visitConstant_Decl(Constant_Decl *constant_decl)
 {
-    /* Code For Constant_Decl Goes Here */
+    /* This one is never going to happen? why would you declare a constant without value...*/
 
     visitIdent(constant_decl->ident_);
     constant_decl->type_->accept(this);
 }
-
 void Simulator::visitConstant_Decl_W_Assign(Constant_Decl_W_Assign *constant_decl_w_assign)
 {
     /* Code For Constant_Decl_W_Assign Goes Here */
@@ -146,6 +267,19 @@ void Simulator::visitConstant_Decl_W_Assign(Constant_Decl_W_Assign *constant_dec
     visitIdent(constant_decl_w_assign->ident_);
     constant_decl_w_assign->type_->accept(this);
     constant_decl_w_assign->literal_->accept(this);
+
+    if (visitedType == STD_LOGIC)
+    {
+        init_state.std_logics.push_back(std_logic_state(constant_decl_w_assign->ident_, visitedLitChar));
+    }
+    else if (visitedType == STD_LOGIC_VECTOR)
+    {
+        init_state.std_logic_vectors.push_back(std_logic_vector_state(constant_decl_w_assign->ident_, visitedLitString));
+    }
+    else //INTEGER
+    {
+        init_state.integers.push_back(integer_state(constant_decl_w_assign->ident_, visitedLitInt));
+    }
 }
 
 void Simulator::visitComponent(Component *component)
@@ -185,7 +319,9 @@ void Simulator::visitConcurrent_Assignment(Concurrent_Assignment *concurrent_ass
 {
     /* Code For Concurrent_Assignment Goes Here */
 
-    concurrent_assignment->exp_1->accept(this);
+    concurrent_assignment->exp_1->accept(this); 
+    //if(visitedExprState == UNRESOLVED){
+    //};
     concurrent_assignment->exp_2->accept(this);
 }
 
@@ -381,13 +517,22 @@ void Simulator::visitLit_string(Lit_string *lit_string)
     /* Code For Lit_string Goes Here */
 
     visitString(lit_string->string_);
+    visitedLitString = lit_string->string_;
 }
 
 void Simulator::visitLit_int(Lit_int *lit_int)
 {
     /* Code For Lit_int Goes Here */
-
     visitInteger(lit_int->integer_);
+    visitedLitInt = lit_int->integer_;
+}
+
+void Simulator::visitLit_char(Lit_char *lit_char)
+{
+    /* Code For Lit_char Goes Here */
+
+    visitChar(lit_char->char_);
+    visitedLitChar = lit_char->char_;
 }
 
 void Simulator::visitT_std_logic(T_std_logic *t_std_logic)
@@ -397,7 +542,10 @@ void Simulator::visitT_std_logic(T_std_logic *t_std_logic)
 
 void Simulator::visitT_std_logic_vector(T_std_logic_vector *t_std_logic_vector)
 {
-    visitedType = STD_LOGIC_VECTOR;
+    /* Code For T_std_logic_vector Goes Here */
+
+    visitInteger(t_std_logic_vector->integer_1);
+    visitInteger(t_std_logic_vector->integer_2);
 }
 
 void Simulator::visitT_integer(T_integer *t_integer)
