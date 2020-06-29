@@ -18,7 +18,7 @@ BEGIN
     f <= '1' ;
     c <= f ;
     d <= NOT e;
-    e <= '0' ;
+    e <= '0', '1' AFTER 3 ps;
     
     
 END ARCHITECTURE test ;

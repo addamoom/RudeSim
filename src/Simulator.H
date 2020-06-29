@@ -98,6 +98,7 @@ private:
     bool check_if_all_signals_are_updated();
     void assignSignalfromLit(std::string i);
     std::string invertString(std::string s);
+    long int convertToPs(int i, std::string u);
 };
 
 #endif

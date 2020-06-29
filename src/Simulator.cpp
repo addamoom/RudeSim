@@ -29,11 +29,12 @@ void Simulator::visitType(Type *t) {}                                   //abstra
 //extern std::vector<PortType> rc_ports;
 
 //Simulation parameters
-int simulation_time;                             //time the simulation should run, in ps
-int simulation_steps = 1;                       //no of discrete time steps in simulation.
+long int simulation_time = 5;                    //time the simulation should run, in ps.
+int simulation_steps = 5;                        //no of discrete time steps in simulation.
+simulation_state init_state;                     //Hold the initial state.
 simulation_state current_state;                  //Holds the currently processed state, to avoid unnecessary vector operations.
 std::vector<simulation_state> simulation_states; //All the simulation states.
-int current_time;
+long int current_time;
 
 //Symbol Information
 std::map<std::string, bool> symbolDoneTable;         //is the value of a symbol accurate in this time frame? always check this table before assigning
@@ -47,11 +48,30 @@ int visitedLitInt;            //When a visit to a literal Int occurs, or when a 
 char visitedLitChar;          //When a visit to a literal Char occurs, or when a STD_LOGIC expression is resolved into a value, this is used to return the value.
 std::string visitedLitString; //When a visit to a literal String occurs, or when a STD_LOGIC_VECTOR expression is resolved into a value, this is used to return the value.
 
-simulation_state init_state;
+long int Simulator::convertToPs(int i, std::string u)
+{
+    long int l = i;
+    if (u == "ps")
+        return l;
+    else if (u == "ns")
+        return l * 1000;
+    else if (u == "us")
+        return l * 1000000;
+    else if (u == "us")
+        return l * 1000000000;
+    else if (u == "us")
+        return l * 1000000000000;
+    else
+    {
+        std::cout << "error in convertToPs " << std::endl;
+        returnvalue = 1;
+        return l;
+    }
+}
 
 void Simulator::assignSignalfromLit(std::string i)
 {
-    //This metod is used to assing a value to a signal from a resolved expression. If the expression isn't resolved, or the required parameters not set, expect wierd behavior
+    //This method is used to assing a value to a signal from a resolved expression. If the expression isn't resolved, or the required parameters not set, expect wierd behavior
     //Relies on that visitedLit* has been set properly in the expression that should be assigned into the value.
     switch (symbolTypeTable[i])
     {
@@ -91,7 +111,8 @@ bool Simulator::check_if_all_signals_are_updated()
     //THis method checks if the value of all signals has been updated in the current time frame. used in visitArch
     for (auto t : symbolDoneTable)
     {
-        if (!t.second){
+        if (!t.second)
+        {
             std::cout << "All signals weren't updated, gonna iterate the concurent statements again" << std::endl;
             return false;
         }
@@ -118,7 +139,8 @@ void Simulator::printState(simulation_state s)
     {
         std::cout << p.identifier << "=" << p.value << std::endl;
     }
-    std::cout << "\n" << std::endl;
+    std::cout << "\n"
+              << std::endl;
 }
 
 int Simulator::startSimulation(Visitable *t)
@@ -169,7 +191,7 @@ void Simulator::visitArch(Arch *arch)
 {
     /* Code For Arch Goes Here */
 
-    bool all_signals_are_updated;
+    bool all_signals_are_updated = false;
     EntityType current_entity;
     int currentTime;
     simulation_state current_state_copy;
@@ -213,29 +235,31 @@ void Simulator::visitArch(Arch *arch)
 
     std::cout << "initialization state : " << std::endl;
     printState(init_state);
+    simulation_states.push_back(init_state);
 
     //now all signals should be initialized. lets move on to simulation
 
     for (int i = 1; i < simulation_steps + 1; i++)
     {
-        if (i == 1)
-            current_state = init_state;
-        else
-            current_state = simulation_states.at(i - 1);
-
+        current_state = simulation_states.at(i - 1);
         current_time = i * simulation_time / simulation_steps;
-
+        for (auto &a : symbolDoneTable)
+            a.second = false;
+        all_signals_are_updated = false;
+        
         while (!all_signals_are_updated)
         {
-            current_state_copy = current_state;
-
+            //current_state_copy = current_state;
             arch->listpost_begin_statements_->accept(this);
             all_signals_are_updated = check_if_all_signals_are_updated();
 
             //kontrollera currstate efter förändringar
         }
+        simulation_states.push_back(current_state);
+        std::cout << "--------------------Simulation state "<< i << "------------------------" << std::endl;
+        printState(current_state);
     }
-    printState(current_state);
+
 }
 
 void Simulator::visitInport(Inport *inport)
@@ -406,9 +430,36 @@ void Simulator::visitConcurrent_Assignment(Concurrent_Assignment *concurrent_ass
 void Simulator::visitConcurrent_Assignment_W_AFTER(Concurrent_Assignment_W_AFTER *concurrent_assignment_w_after)
 {
     /* Code For Concurrent_Assignment_W_AFTER Goes Here */
+    //visitIdent(concurrent_assignment_w_after->ident_);
 
-    concurrent_assignment_w_after->exp_->accept(this);
-    concurrent_assignment_w_after->listass_statements_->accept(this);
+    if (symbolDoneTable[concurrent_assignment_w_after->ident_] == false)
+    {
+        //The symbol haven't been updated for this timeframe and we should therefore try to do that
+        concurrent_assignment_w_after->exp_->accept(this);
+        concurrent_assignment_w_after->listass_statements_->accept(this);
+
+        if (visitedExprState == VALUE)
+        {
+            //then we can do an assign and mark the symbol as done.
+            assignSignalfromLit(concurrent_assignment_w_after->ident_);
+            symbolDoneTable[concurrent_assignment_w_after->ident_] = true;
+        }
+        else if (visitedExprState == SYMBOL)
+        {
+            //then we need to look up if the symbol is done
+            //This state isn't currently used
+        }
+        else
+        {
+            //then the visitedExprState is UNRESOLVED and we cant do anything this run
+            std::cout << "Signal " << concurrent_assignment_w_after->ident_ << " couldnt be assigned yet due to depending on signals that arent done being simulated." << std::endl;
+        }
+    }
+    else
+    {
+        //the symbol has already been updated and should therefore not be touched.
+        std::cout << "Skipping assignment to " << concurrent_assignment_w_after->ident_ << " since it is marked as done." << std::endl;
+    }
 }
 
 void Simulator::visitWhen_Statement(When_Statement *when_statement)
@@ -432,9 +483,10 @@ void Simulator::visitAfter_Component(After_Component *after_component)
 {
     /* Code For After_Component Goes Here */
 
-    after_component->exp_->accept(this);
-    visitInteger(after_component->integer_);
-    visitIdent(after_component->ident_);
+    if (convertToPs(after_component->integer_, after_component->ident_) <= current_time)
+    {
+        after_component->exp_->accept(this);
+    }
 }
 
 void Simulator::visitWhen_Component(When_Component *when_component)
@@ -509,7 +561,7 @@ void Simulator::visitCase_Case(Case_Case *case_case)
 void Simulator::visitE_Identifier(E_Identifier *e_identifier)
 {
     //If the symbol has a value, set the expression status to VALUE and return symbol value. Otherwise set as UNRESOLVED
-    std::string i  = e_identifier->ident_;
+    std::string i = e_identifier->ident_;
     if (symbolDoneTable[i])
     {
         switch (symbolTypeTable[i])
@@ -796,4 +848,4 @@ void Simulator::visitString(String x)
 void Simulator::visitIdent(Ident x)
 {
     /* Code for Ident Goes Here */
-} 
+}
