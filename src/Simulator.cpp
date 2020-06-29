@@ -235,6 +235,7 @@ void Simulator::visitArch(Arch *arch)
             //kontrollera currstate efter förändringar
         }
     }
+    printState(current_state);
 }
 
 void Simulator::visitInport(Inport *inport)
