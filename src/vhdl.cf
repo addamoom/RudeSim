@@ -55,9 +55,9 @@ Port_Map_Internal_Statement. Pmap_stm ::= Ident "=>" Ident ;
 
 -- Concurrent_statements ------------
 
-Concurrent_Assignment. Concurrent_statement ::= Exp "<=" Exp ";" ;
+Concurrent_Assignment. Concurrent_statement ::=  Ident "<=" Exp ";" ;
 
-Concurrent_Assignment_W_AFTER. Concurrent_statement ::= Exp "<="  Exp "," [Ass_statements] ";" ;
+Concurrent_Assignment_W_AFTER. Concurrent_statement ::= Ident "<="  Exp "," [Ass_statements] ";" ;
 
 separator Ass_statements "," ;
 
@@ -92,7 +92,7 @@ If_Else_Statement. Sequential_statement ::= "IF" Exp "=" Exp "THEN" [Sequential_
 
 Wait_For_Statement. Sequential_statement ::= "WAIT FOR" Integer Ident ";"; --Ident must be a time unit
 
-Seq_Assignment. Sequential_statement ::= Exp "<=" Exp ";" ;
+Seq_Assignment. Sequential_statement ::= Ident "<=" Exp ";" ;
 
 -- Expressions ------------------
  

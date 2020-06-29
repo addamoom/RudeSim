@@ -10,12 +10,11 @@
 #include <iostream>
 #include <algorithm>
 
-#define REDTEXT "\033[1;31m" //Use for errors
+#define REDTEXT "\033[1;31m"    //Use for errors
 #define YELLOWTEXT "\033[1;33m" //Use for warnings
-#define GREENTEXT "\033[1;32m" //Use for Sucesses
-#define NORMTEXT "\033[0m"  //Reset text back to normal
+#define GREENTEXT "\033[1;32m"  //Use for Sucesses
+#define NORMTEXT "\033[0m"      //Reset text back to normal
 
- 
 void RuleCheck::visitProg(Prog *t) {}                                   //abstract class
 void RuleCheck::visitTopDef(TopDef *t) {}                               //abstract class
 void RuleCheck::visitPorts(Ports *t) {}                                 //abstract class
@@ -32,7 +31,6 @@ void RuleCheck::visitCmpop(Cmpop *t) {}                                 //abstra
 void RuleCheck::visitLiteral(Literal *t) {}                             //abstract class
 void RuleCheck::visitType(Type *t) {}                                   //abstract class
 
-
 int RuleCheck::startRuleCheck(Visitable *t)
 {
     t->accept(this);
@@ -43,7 +41,8 @@ void RuleCheck::checkSymbolUniqueness(std::string s)
 {
     for (std::string x : symbols)
     {
-        if (x == s){
+        if (x == s)
+        {
             printErrorMessage("Symbol " + s + " declared more than once!");
             returnvalue = 1;
         }
@@ -64,7 +63,7 @@ void RuleCheck::visitProgram(Program *program)
 void RuleCheck::visitLibrary_Dec(Library_Dec *library_dec)
 {
     /* Code For Library_Dec Goes Here */
-    
+
     //visitIdent(library_dec->ident_);
 }
 
@@ -86,7 +85,7 @@ void RuleCheck::visitEntity(Entity *entity)
 
     if (entity->ident_1 != entity->ident_2)
     {
-         printErrorMessage( "END label in Entity " + entity->ident_1 +" did not match entity name!");
+        printErrorMessage("END label in Entity " + entity->ident_1 + " did not match entity name!");
         returnvalue = 1;
     }
 
@@ -119,14 +118,14 @@ void RuleCheck::visitArch(Arch *arch)
 
     if (std::find(entities.begin(), entities.end(), arch->ident_2) == entities.end())
     {
-        printErrorMessage("The Entity " + arch->ident_2 + " pointed to by architecture " + arch->ident_1 + " does not exist (yet)!" );
+        printErrorMessage("The Entity " + arch->ident_2 + " pointed to by architecture " + arch->ident_1 + " does not exist (yet)!");
     }
 
     for (ArchType a : archs)
     {
         if ((a.label == arch->ident_1) && (a.entity == arch->ident_2))
         {
-            printErrorMessage( "Several architectures of the same entity share labels");
+            printErrorMessage("Several architectures of the same entity share labels");
             returnvalue = 1;
         }
     }
@@ -145,7 +144,7 @@ void RuleCheck::visitInport(Inport *inport)
         - same port declared more than once. DONE
     everything else is handled by lexer/parser since i made putting the wrong type a syntax error
     */
-   
+
     visitIdent(inport->ident_);
     inport->type_->accept(this);
     checkSymbolUniqueness(inport->ident_);
@@ -189,8 +188,7 @@ void RuleCheck::visitSignal_Decl(Signal_Decl *signal_decl)
 
     visitIdent(signal_decl->ident_);
     signal_decl->type_->accept(this);
-    
-    
+
     symbols.push_back(signal_decl->ident_);
 }
 
@@ -256,17 +254,16 @@ void RuleCheck::visitPort_Map_Internal_Statement(Port_Map_Internal_Statement *po
 void RuleCheck::visitConcurrent_Assignment(Concurrent_Assignment *concurrent_assignment)
 {
     /* Code For Concurrent_Assignment Goes Here */
-
-    concurrent_assignment->exp_1->accept(this);
-    concurrent_assignment->exp_2->accept(this);
+    visitIdent(concurrent_assignment->ident_);
+    concurrent_assignment->exp_->accept(this);
 }
 
 void RuleCheck::visitConcurrent_Assignment_W_AFTER(Concurrent_Assignment_W_AFTER *concurrent_assignment_w_after)
 {
     /* Code For Concurrent_Assignment_W_AFTER Goes Here */
 
-    concurrent_assignment_w_after->exp_1->accept(this);
-    concurrent_assignment_w_after->exp_2->accept(this);
+    visitIdent(concurrent_assignment_w_after->ident_);
+    concurrent_assignment_w_after->exp_->accept(this);
     concurrent_assignment_w_after->listass_statements_->accept(this);
 }
 
@@ -352,9 +349,8 @@ void RuleCheck::visitWait_For_Statement(Wait_For_Statement *wait_for_statement)
 void RuleCheck::visitSeq_Assignment(Seq_Assignment *seq_assignment)
 {
     /* Code For Seq_Assignment Goes Here */
-
-    seq_assignment->exp_1->accept(this);
-    seq_assignment->exp_2->accept(this);
+    visitIdent(seq_assignment->ident_);
+    seq_assignment->exp_->accept(this);
 }
 
 void RuleCheck::visitCase_Case(Case_Case *case_case)
@@ -465,10 +461,9 @@ void RuleCheck::visitLit_int(Lit_int *lit_int)
 
 void RuleCheck::visitLit_char(Lit_char *lit_char)
 {
-  /* Code For Lit_char Goes Here */
+    /* Code For Lit_char Goes Here */
 
-  visitChar(lit_char->char_);
-
+    visitChar(lit_char->char_);
 }
 
 void RuleCheck::visitT_std_logic(T_std_logic *t_std_logic)
@@ -479,11 +474,10 @@ void RuleCheck::visitT_std_logic(T_std_logic *t_std_logic)
 
 void RuleCheck::visitT_std_logic_vector(T_std_logic_vector *t_std_logic_vector)
 {
-  /* Code For T_std_logic_vector Goes Here */
+    /* Code For T_std_logic_vector Goes Here */
 
-  visitInteger(t_std_logic_vector->integer_1);
-  visitInteger(t_std_logic_vector->integer_2);
-
+    visitInteger(t_std_logic_vector->integer_1);
+    visitInteger(t_std_logic_vector->integer_2);
 }
 
 void RuleCheck::visitT_integer(T_integer *t_integer)

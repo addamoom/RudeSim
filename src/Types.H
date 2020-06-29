@@ -16,8 +16,8 @@ enum Port_direction
 };
 enum Expr_state
 {
-    VALUE,
-    SYMBOL,
+    VALUE,              //When an expression is resolved into a value, the coresponding visitedLit* var must be set with the value.
+    SYMBOL,             //Gonna use UNRESOLVED instead of this one to begin with 
     UNRESOLVED
 };
 
