@@ -15,7 +15,7 @@ ARCHITECTURE test OF testThing IS
     SIGNAL e : STD_LOGIC ;
     SIGNAL f : STD_LOGIC ;
     SIGNAL g : STD_LOGIC := '1';
-    SIGNAL h : STD_LOGIC_VECTOR(5 DOWNTO 0);
+    SIGNAL h : STD_LOGIC_VECTOR(5 DOWNTO 0) := "000000";
 
 BEGIN
     f <= '1' ;

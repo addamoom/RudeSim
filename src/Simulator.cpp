@@ -201,6 +201,7 @@ void Simulator::visitArch(Arch *arch)
     EntityType current_entity;
     int currentTime;
     simulation_state current_state_copy;
+    int whilecounter = 1;
     //visitIdent(arch->ident_1);
     //visitIdent(arch->ident_2);
     //visitIdent(arch->ident_3);
@@ -252,9 +253,13 @@ void Simulator::visitArch(Arch *arch)
         for (auto &a : symbolDoneTable)
             a.second = false;
         all_signals_are_updated = false;
-        
+
+        std::cout << "--------------------Simulation state "<< i << "------------------------" << std::endl;
+        whilecounter = 0;
         while (!all_signals_are_updated)
         {
+            std::cout << "Step Iteration "  << whilecounter << " events:"<< std::endl;
+            whilecounter++;
             //current_state_copy = current_state;
             arch->listpost_begin_statements_->accept(this);
             all_signals_are_updated = check_if_all_signals_are_updated();
@@ -262,7 +267,7 @@ void Simulator::visitArch(Arch *arch)
             //kontrollera currstate efter förändringar
         }
         simulation_states.push_back(current_state);
-        std::cout << "--------------------Simulation state "<< i << "------------------------" << std::endl;
+        std::cout << "\nCompleted state:" << std::endl;
         printState(current_state);
     }
 
@@ -328,14 +333,17 @@ void Simulator::visitSignal_Decl_W_Assign(Signal_Decl_W_Assign *signal_decl_w_as
     if (visitedType == STD_LOGIC)
     {
         init_state.std_logics.push_back(std_logic_state(signal_decl_w_assign->ident_, visitedLitChar));
+        symbolTypeTable[signal_decl_w_assign->ident_] = STD_LOGIC;
     }
     else if (visitedType == STD_LOGIC_VECTOR)
     {
         init_state.std_logic_vectors.push_back(std_logic_vector_state(signal_decl_w_assign->ident_, visitedLitString));
+        symbolTypeTable[signal_decl_w_assign->ident_] = STD_LOGIC_VECTOR;
     }
     else //INTEGER
     {
         init_state.integers.push_back(integer_state(signal_decl_w_assign->ident_, visitedLitInt));
+        symbolTypeTable[signal_decl_w_assign->ident_] = INTEGER;
     }
 }
 
@@ -655,7 +663,6 @@ void Simulator::visitE_Sub(E_Sub *e_sub)
 }
 std::string Simulator::invertString(std::string s)
 {
-    std::cout << "visitedinvert" << std::endl;
     for(char& c : s) {
         if(c == '0')
             c = '1';
