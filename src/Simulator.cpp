@@ -9,6 +9,11 @@
 #include <iostream>
 #include <map>
 
+#define REDTEXT "\033[1;31m"    //Use for errors
+#define YELLOWTEXT "\033[1;33m" //Use for warnings
+#define GREENTEXT "\033[1;32m"  //Use for Sucesses
+#define NORMTEXT "\033[0m"      //Reset text back to normal
+
 void Simulator::visitProg(Prog *t) {}                                   //abstract class
 void Simulator::visitTopDef(TopDef *t) {}                               //abstract class
 void Simulator::visitPorts(Ports *t) {}                                 //abstract class
@@ -91,6 +96,7 @@ void Simulator::assignSignalfromLit(std::string i)
             if (s.identifier == i)
             {
                 s.value = visitedLitString;
+                std::cout << "Assigning signal " << i << " the value \'" << visitedLitString << "\'" << std::endl;
             }
         }
         break;
@@ -649,6 +655,14 @@ void Simulator::visitE_Sub(E_Sub *e_sub)
 }
 std::string Simulator::invertString(std::string s)
 {
+    std::cout << "visitedinvert" << std::endl;
+    for(char& c : s) {
+        if(c == '0')
+            c = '1';
+        else if(c == '1')
+            c = '0';
+    }
+    return s;
 }
 
 void Simulator::visitE_Not(E_Not *e_not)
@@ -665,12 +679,12 @@ void Simulator::visitE_Not(E_Not *e_not)
                 visitedLitChar = '0';
             else if (visitedLitChar == '0')
                 visitedLitChar = '1';
-            else
-                visitedLitChar = 'X';
             break;
         case STD_LOGIC_VECTOR:
+            visitedLitString = invertString(visitedLitString);
             break;
         case INTEGER:
+            std::cout << YELLOWTEXT << "WARNING: " << NORMTEXT << "NOT operator used on integer, Ignoring it" << std::endl;
             break;
         }
     }
@@ -703,7 +717,7 @@ void Simulator::visitE_More(E_More *e_more)
 void Simulator::visitLit_string(Lit_string *lit_string)
 {
     /* Code For Lit_string Goes Here */
-
+    std::cout << "visited lit string" << std::endl;
     visitString(lit_string->string_);
     visitedLitString = lit_string->string_;
     visitedExprState = VALUE;
@@ -735,8 +749,9 @@ void Simulator::visitT_std_logic_vector(T_std_logic_vector *t_std_logic_vector)
 {
     /* Code For T_std_logic_vector Goes Here */
 
-    visitInteger(t_std_logic_vector->integer_1);
-    visitInteger(t_std_logic_vector->integer_2);
+    //visitInteger(t_std_logic_vector->integer_1);
+    //visitInteger(t_std_logic_vector->integer_2);
+    visitedType = STD_LOGIC_VECTOR;
 }
 
 void Simulator::visitT_integer(T_integer *t_integer)
@@ -826,13 +841,16 @@ void Simulator::visitListSequential_statement(ListSequential_statement *listsequ
 
 void Simulator::visitInteger(Integer x)
 {
-    /* Code for Integer Goes Here */
+    visitedLitInt = x;
+    visitedExprState = VALUE;
+    visitedType = INTEGER;
 }
 
 void Simulator::visitChar(Char x)
 {
     visitedLitChar = x;
     visitedExprState = VALUE;
+    visitedType = STD_LOGIC;
 }
 
 void Simulator::visitDouble(Double x)
@@ -842,7 +860,9 @@ void Simulator::visitDouble(Double x)
 
 void Simulator::visitString(String x)
 {
-    /* Code for String Goes Here */
+    visitedLitString = x;
+    visitedExprState = VALUE;
+    visitedType = STD_LOGIC_VECTOR;
 }
 
 void Simulator::visitIdent(Ident x)
