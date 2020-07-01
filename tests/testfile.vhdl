@@ -16,6 +16,8 @@ ARCHITECTURE test OF testThing IS
     SIGNAL f : STD_LOGIC ;
     SIGNAL g : STD_LOGIC := '1';
     SIGNAL h : STD_LOGIC_VECTOR(5 DOWNTO 0) := "000000";
+    SIGNAL j : INTEGER := 4;
+    SIGNAL k : INTEGER;
 
 BEGIN
     f <= '1' ;
@@ -24,6 +26,8 @@ BEGIN
     e <= '0', '1' AFTER 3 ps;
     h <= "111100", "100111" AFTER 2 ps;
     i <= NOT "111111";
+    j <= k;
+    k <= 10, 344 AFTER 2 ps, 26 AFTER 4 ps;
     
 END ARCHITECTURE test ;
 

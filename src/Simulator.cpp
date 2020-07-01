@@ -106,6 +106,7 @@ void Simulator::assignSignalfromLit(std::string i)
             if (s.identifier == i)
             {
                 s.value = visitedLitInt;
+                std::cout << "Assigning signal " << i << " the value \'" << visitedLitInt << "\'" << std::endl;
             }
         }
         break;
@@ -848,6 +849,7 @@ void Simulator::visitListSequential_statement(ListSequential_statement *listsequ
 
 void Simulator::visitInteger(Integer x)
 {
+    std::cout << "visited integer" << x << std::endl;
     visitedLitInt = x;
     visitedExprState = VALUE;
     visitedType = INTEGER;
