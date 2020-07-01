@@ -9,12 +9,14 @@
 #include "Simulator.H"
 #include "Types.H"
 #include <iostream>
+#include <time.h>
 
 std::vector<SignalType> rc_signals;
 std::vector<PortType> rc_ports;
 
 int main(int argc, char **argv)
 {
+    clock_t start = clock();
     FILE *input;
     if (argc > 1)
     {
@@ -73,6 +75,7 @@ int main(int argc, char **argv)
         std::cerr << "Simulator was unsuccessfull" << std::endl;
         return 2;
     }
+    std::cout << "Simulation finished in: " << (double)(clock() - start) / (double)CLOCKS_PER_SEC << std::endl;
 
     return 0;
 }

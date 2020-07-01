@@ -8,6 +8,7 @@
 #include "Types.H"
 #include <iostream>
 #include <map>
+#include <time.h>
 
 #define REDTEXT "\033[1;31m"    //Use for errors
 #define YELLOWTEXT "\033[1;33m" //Use for warnings
@@ -35,7 +36,7 @@ void Simulator::visitType(Type *t) {}                                   //abstra
 
 //Simulation parameters
 long int simulation_time = 5;                    //time the simulation should run, in ps.
-int simulation_steps = 5;                        //no of discrete time steps in simulation.
+int simulation_steps = 50000;                      //no of discrete time steps in simulation.
 simulation_state init_state;                     //Hold the initial state.
 simulation_state current_state;                  //Holds the currently processed state, to avoid unnecessary vector operations.
 std::vector<simulation_state> simulation_states; //All the simulation states.
