@@ -136,5 +136,8 @@ T_std_logic_vector. Type ::= "STD_LOGIC_VECTOR" "(" Integer "DOWNTO" Integer ")"
 
 T_integer. Type ::= "INTEGER" ;
 
+-- Comments -------------------
+comment    "--" ;
+
 
 
