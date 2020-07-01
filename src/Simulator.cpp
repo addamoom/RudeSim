@@ -35,8 +35,7 @@ void Simulator::visitType(Type *t) {}                                   //abstra
 //extern std::vector<PortType> rc_ports;
 
 //Simulation parameters
-long int simulation_time = 5;                    //time the simulation should run, in ps.
-int simulation_steps = 50000;                      //no of discrete time steps in simulation.
+
 simulation_state init_state;                     //Hold the initial state.
 simulation_state current_state;                  //Holds the currently processed state, to avoid unnecessary vector operations.
 std::vector<simulation_state> simulation_states; //All the simulation states.

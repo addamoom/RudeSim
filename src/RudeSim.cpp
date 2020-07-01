@@ -1,5 +1,5 @@
 // DEBUG parameters, remove to disable
-#define PRINT_DEBUG_INFO 
+#define PRINT_DEBUG_INFO
 
 #include <stdio.h>
 #include "../Parser.H"
@@ -10,6 +10,8 @@
 #include "Types.H"
 #include <iostream>
 #include <time.h>
+#include <unistd.h>
+#include <bits/stdc++.h> 
 
 std::vector<SignalType> rc_signals;
 std::vector<PortType> rc_ports;
@@ -17,10 +19,40 @@ std::vector<PortType> rc_ports;
 int main(int argc, char **argv)
 {
     clock_t start = clock();
+
+    int simulationTime = 10;
+    std::string simulationTimeUnit = "ps";
+    int simulationResolution = 10;
     FILE *input;
-    if (argc > 1)
+    std::string filename = "";
+    int c;
+
+    while ((c = getopt(argc, argv, "f:t:u:r:")) != -1)
     {
-        input = fopen(argv[1], "r");
+        switch (c)
+        {
+        case 'f': //sets a input file instead of taking it from stdin.
+            filename = optarg;
+            break;
+        case 't': //sets simulation time.
+            simulationTime = std::stoi(optarg);
+            break;
+        case 'u': //sets unit for given simulation time.
+            simulationTimeUnit = optarg;
+            break;
+        case 'r': //sets resolution/no of steps for the simulator
+            simulationResolution = std::stoi(optarg);
+            break;
+        case '?':
+            std::cout << "Wierd parameter given to RudeSim" << std::endl;
+        default:
+            abort();
+        };
+    };
+
+    if (filename != "")
+    {
+        input = fopen(filename.c_str(), "r");
         if (!input)
         {
             fprintf(stderr, "Error opening input file.\n");
@@ -29,20 +61,21 @@ int main(int argc, char **argv)
     }
     else
         input = stdin;
+
     Prog *parse_tree = pProg(input);
 
     if (parse_tree)
     {
-        printf("\nParse Succesful!\n");
+        printf("\nParse Successful!\n");
 
-        #ifdef PRINT_DEBUG_INFO
-            printf("\n[Abstract Syntax]\n");
-            ShowAbsyn *s = new ShowAbsyn();
-            printf("%s\n\n", s->show(parse_tree));
-            printf("[Linearized Tree]\n");
-            PrintAbsyn *p = new PrintAbsyn();
-            printf("%s\n\n", p->print(parse_tree));
-        #endif
+#ifdef PRINT_DEBUG_INFO
+        printf("\n[Abstract Syntax]\n");
+        ShowAbsyn *s = new ShowAbsyn();
+        printf("%s\n\n", s->show(parse_tree));
+        printf("[Linearized Tree]\n");
+        PrintAbsyn *p = new PrintAbsyn();
+        printf("%s\n\n", p->print(parse_tree));
+#endif
     }
     else
     {
@@ -65,17 +98,19 @@ int main(int argc, char **argv)
     rc_ports = ruleChecker.entity_ports;
 
     Simulator sim = Simulator();
+    sim.simulation_time = sim.convertToPs(simulationTime, simulationTimeUnit);
+    sim.simulation_steps = simulationResolution;
 
     if (sim.startSimulation(parse_tree) == 0)
     {
-        std::cout << "Simulation finished sucsessfully" << std::endl;
+        std::cout << "Simulation finished successfully" << std::endl;
     }
     else
     {
         std::cerr << "Simulator was unsuccessfull" << std::endl;
         return 2;
     }
-    std::cout << "Simulation finished in: " << (double)(clock() - start) / (double)CLOCKS_PER_SEC << std::endl;
+    std::cout << "Time elapsed: " << (double)(clock() - start) / (double)CLOCKS_PER_SEC << std::endl;
 
     return 0;
 }

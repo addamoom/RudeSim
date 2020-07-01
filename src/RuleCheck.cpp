@@ -12,7 +12,7 @@
 
 #define REDTEXT "\033[1;31m"    //Use for errors
 #define YELLOWTEXT "\033[1;33m" //Use for warnings
-#define GREENTEXT "\033[1;32m"  //Use for Sucesses
+#define GREENTEXT "\033[1;32m"  //Use for Successes
 #define NORMTEXT "\033[0m"      //Reset text back to normal
 
 void RuleCheck::visitProg(Prog *t) {}                                   //abstract class

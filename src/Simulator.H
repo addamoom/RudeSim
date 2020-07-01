@@ -89,6 +89,9 @@ public:
     void visitIdent(Ident x);
 
     int startSimulation(Visitable *t);
+    long int convertToPs(int i, std::string u);
+    long int simulation_time = 5;                    //time the simulation should run, in ps.
+    int simulation_steps = 50000;                      //no of discrete time steps in simulation.
 
 private:
     int returnvalue = 0;                // set this to one if errors are detected.
@@ -98,7 +101,6 @@ private:
     bool check_if_all_signals_are_updated();
     void assignSignalfromLit(std::string i);
     std::string invertString(std::string s);
-    long int convertToPs(int i, std::string u);
 };
 
 #endif
