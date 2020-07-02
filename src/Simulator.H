@@ -90,17 +90,19 @@ public:
 
     int startSimulation(Visitable *t);
     long int convertToPs(int i, std::string u);
-    long int simulation_time = 5;                    //time the simulation should run, in ps.
-    int simulation_steps = 50000;                      //no of discrete time steps in simulation.
+    long int simulation_time = 5; //time the simulation should run, in ps.
+    int simulation_steps = 50000; //no of discrete time steps in simulation.
+    bool printDebugInfo;          //Determines wheter debug info should be printed or not
 
 private:
-    int returnvalue = 0;                // set this to one if errors are detected.
+    int returnvalue = 0; // set this to one if errors are detected.
 
-    std::vector<EntityType> entities;  //List of entities in the file.
+    std::vector<EntityType> entities; //List of entities in the file.
     void printState(simulation_state s);
     bool check_if_all_signals_are_updated();
     void assignSignalfromLit(std::string i);
     std::string invertString(std::string s);
+    void print(PrintType p, std::string s);
 };
 
 #endif

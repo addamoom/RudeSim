@@ -12,7 +12,7 @@
 
 #define REDTEXT "\033[1;31m"    //Use for errors
 #define YELLOWTEXT "\033[1;33m" //Use for warnings
-#define GREENTEXT "\033[1;32m"  //Use for Sucesses
+#define GREENTEXT "\033[1;32m"  //Use for Successes
 #define NORMTEXT "\033[0m"      //Reset text back to normal
 
 void Simulator::visitProg(Prog *t) {}                                   //abstract class
@@ -53,6 +53,30 @@ int visitedLitInt;            //When a visit to a literal Int occurs, or when a 
 char visitedLitChar;          //When a visit to a literal Char occurs, or when a STD_LOGIC expression is resolved into a value, this is used to return the value.
 std::string visitedLitString; //When a visit to a literal String occurs, or when a STD_LOGIC_VECTOR expression is resolved into a value, this is used to return the value.
 
+void Simulator::print(PrintType p, std::string s){
+    switch (p)
+    {
+    case ERROR:
+        std::cout << REDTEXT << "ERROR: " << NORMTEXT << s << std::endl;
+        break;
+    case WARNING:
+        std::cout << YELLOWTEXT << "WARNING: " << NORMTEXT << s << std::endl;
+        break;
+    case DEBUGINFO:
+        if(printDebugInfo){
+            std::cout << GREENTEXT << "DEBUG: " << NORMTEXT << s << std::endl;
+        }
+        break;
+    case CURRENTSTATE:
+        if(printDebugInfo){
+            printState(current_state);
+        }
+        break;
+    default:
+        break;
+    }
+}
+
 long int Simulator::convertToPs(int i, std::string u)
 {
     long int l = i;
@@ -68,7 +92,7 @@ long int Simulator::convertToPs(int i, std::string u)
         return l * 1000000000000;
     else
     {
-        std::cout << "error in convertToPs " << std::endl;
+        print(ERROR, "error in convertToPs");
         returnvalue = 1;
         return l;
     }
@@ -86,7 +110,7 @@ void Simulator::assignSignalfromLit(std::string i)
             if (s.identifier == i)
             {
                 s.value = visitedLitChar;
-                std::cout << "Assigning signal " << i << " the value \'" << visitedLitChar << "\'" << std::endl;
+                print(DEBUGINFO, "Assigning signal " + i + " the value \'" + visitedLitChar + "\'");
             }
         }
         break;
@@ -96,7 +120,7 @@ void Simulator::assignSignalfromLit(std::string i)
             if (s.identifier == i)
             {
                 s.value = visitedLitString;
-                std::cout << "Assigning signal " << i << " the value \'" << visitedLitString << "\'" << std::endl;
+                print(DEBUGINFO, "Assigning signal " + i + " the value \'" + visitedLitString + "\'");
             }
         }
         break;
@@ -106,7 +130,7 @@ void Simulator::assignSignalfromLit(std::string i)
             if (s.identifier == i)
             {
                 s.value = visitedLitInt;
-                std::cout << "Assigning signal " << i << " the value \'" << visitedLitInt << "\'" << std::endl;
+                print(DEBUGINFO, "Assigning signal " + i + " the value \'" + std::to_string(visitedLitInt) + "\'");
             }
         }
         break;
@@ -120,31 +144,31 @@ bool Simulator::check_if_all_signals_are_updated()
     {
         if (!t.second)
         {
-            std::cout << "All signals weren't updated, gonna iterate the concurent statements again" << std::endl;
+            print(DEBUGINFO, "All signals weren't updated, gonna iterate the concurent statements again");
             return false;
         }
     }
-    std::cout << "All signals were updated, time frame is complete" << std::endl;
+    print(DEBUGINFO, "All signals were updated, time frame is complete");
     return true;
 }
 
 void Simulator::printState(simulation_state s)
 {
     //Used to prettyprint a simulation state
-    std::cout << "std_logics:" << std::endl;
+    std::cout << "\tstd_logics:" << std::endl;
     for (auto p : s.std_logics)
     {
-        std::cout << p.identifier << "=" << p.value << std::endl;
+        std::cout << "\t\t" <<p.identifier << " = " << p.value << std::endl;
     }
-    std::cout << "std_logic_vectors:" << std::endl;
+    std::cout << "\tstd_logic_vectors:" << std::endl;
     for (auto p : s.std_logic_vectors)
     {
-        std::cout << p.identifier << "=" << p.value << std::endl;
+        std::cout << "\t\t" << p.identifier << " = " << p.value << std::endl;
     }
-    std::cout << "Integers:" << std::endl;
+    std::cout << "\tIntegers:" << std::endl;
     for (auto p : s.integers)
     {
-        std::cout << p.identifier << "=" << p.value << std::endl;
+        std::cout << "\t\t"<<  p.identifier << " = " << p.value << std::endl;
     }
     std::cout << "\n"
               << std::endl;
@@ -241,8 +265,9 @@ void Simulator::visitArch(Arch *arch)
     arch->listpre_begin_statements_->accept(this);
     //done.
 
-    std::cout << "initialization state : " << std::endl;
-    printState(init_state);
+    current_state = init_state; //redundant but quick fix for printing
+    print(DEBUGINFO, "\n--------------------Init state ------------------------");
+    print(CURRENTSTATE, "");
     simulation_states.push_back(init_state);
 
     //now all signals should be initialized. lets move on to simulation
@@ -255,11 +280,11 @@ void Simulator::visitArch(Arch *arch)
             a.second = false;
         all_signals_are_updated = false;
 
-        std::cout << "--------------------Simulation state "<< i << "------------------------" << std::endl;
+        print(DEBUGINFO, "\n--------------------Simulation state " + std::to_string(i) + "------------------------");
         whilecounter = 0;
         while (!all_signals_are_updated)
         {
-            std::cout << "Step Iteration "  << whilecounter << " events:"<< std::endl;
+            print(DEBUGINFO, "Step Iteration "  + std::to_string(whilecounter) + " events:");
             whilecounter++;
             //current_state_copy = current_state;
             arch->listpost_begin_statements_->accept(this);
@@ -268,10 +293,9 @@ void Simulator::visitArch(Arch *arch)
             //kontrollera currstate efter förändringar
         }
         simulation_states.push_back(current_state);
-        std::cout << "\nCompleted state:" << std::endl;
+        print(DEBUGINFO, "Completed state status:");
         printState(current_state);
     }
-
 }
 
 void Simulator::visitInport(Inport *inport)
@@ -432,13 +456,13 @@ void Simulator::visitConcurrent_Assignment(Concurrent_Assignment *concurrent_ass
         else
         {
             //then the visitedExprState is UNRESOLVED and we cant do anything this run
-            std::cout << "Signal " << concurrent_assignment->ident_ << " couldnt be assigned yet due to depending on signals that arent done being simulated." << std::endl;
+            print(DEBUGINFO,"Signal " + concurrent_assignment->ident_ + " couldnt be assigned yet due to depending on signals that aren't done being simulated.");
         }
     }
     else
     {
         //the symbol has already been updated and should therefore not be touched.
-        std::cout << "Skipping assignment to " << concurrent_assignment->ident_ << " since it is marked as done." << std::endl;
+        print(DEBUGINFO, "Skipping assignment to " + concurrent_assignment->ident_ + " since it is marked as done." );
     }
 }
 
@@ -467,13 +491,13 @@ void Simulator::visitConcurrent_Assignment_W_AFTER(Concurrent_Assignment_W_AFTER
         else
         {
             //then the visitedExprState is UNRESOLVED and we cant do anything this run
-            std::cout << "Signal " << concurrent_assignment_w_after->ident_ << " couldnt be assigned yet due to depending on signals that arent done being simulated." << std::endl;
+            print(DEBUGINFO, concurrent_assignment_w_after->ident_ +" couldnt be assigned yet due to depending on signals that aren't done being simulated." );
         }
     }
     else
     {
         //the symbol has already been updated and should therefore not be touched.
-        std::cout << "Skipping assignment to " << concurrent_assignment_w_after->ident_ << " since it is marked as done." << std::endl;
+       print(DEBUGINFO,"Skipping assignment to " + concurrent_assignment_w_after->ident_ + " since it is marked as done." );
     }
 }
 
@@ -692,7 +716,7 @@ void Simulator::visitE_Not(E_Not *e_not)
             visitedLitString = invertString(visitedLitString);
             break;
         case INTEGER:
-            std::cout << YELLOWTEXT << "WARNING: " << NORMTEXT << "NOT operator used on integer, Ignoring it" << std::endl;
+            print(WARNING, "NOT operator used on integer, Ignoring it");
             break;
         }
     }
@@ -849,7 +873,6 @@ void Simulator::visitListSequential_statement(ListSequential_statement *listsequ
 
 void Simulator::visitInteger(Integer x)
 {
-    std::cout << "visited integer" << x << std::endl;
     visitedLitInt = x;
     visitedExprState = VALUE;
     visitedType = INTEGER;

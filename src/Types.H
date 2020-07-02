@@ -20,6 +20,13 @@ enum Expr_state
     SYMBOL,             //Gonna use UNRESOLVED instead of this one to begin with 
     UNRESOLVED
 };
+enum PrintType
+{
+    ERROR,
+    WARNING,
+    DEBUGINFO,
+    CURRENTSTATE
+};
 
 struct PortType
 {

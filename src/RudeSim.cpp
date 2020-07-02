@@ -26,8 +26,9 @@ int main(int argc, char **argv)
     FILE *input;
     std::string filename = "";
     int c;
+    bool printDebugInfo = false;
 
-    while ((c = getopt(argc, argv, "f:t:u:r:")) != -1)
+    while ((c = getopt(argc, argv, "f:t:u:r:d")) != -1)
     {
         switch (c)
         {
@@ -42,6 +43,9 @@ int main(int argc, char **argv)
             break;
         case 'r': //sets resolution/no of steps for the simulator
             simulationResolution = std::stoi(optarg);
+            break;
+        case 'd':
+            printDebugInfo = true;
             break;
         case '?':
             std::cout << "Wierd parameter given to RudeSim" << std::endl;
@@ -100,7 +104,7 @@ int main(int argc, char **argv)
     Simulator sim = Simulator();
     sim.simulation_time = sim.convertToPs(simulationTime, simulationTimeUnit);
     sim.simulation_steps = simulationResolution;
-
+    sim.printDebugInfo = printDebugInfo;
     if (sim.startSimulation(parse_tree) == 0)
     {
         std::cout << "Simulation finished successfully" << std::endl;

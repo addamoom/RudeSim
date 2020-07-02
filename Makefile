@@ -59,4 +59,4 @@ TestSyntax: ${OBJS} Test.o
 	cat tests/testfile.vhdl | ./TestSyntax
 
 TestRudeSim: RudeSim
-	cat tests/testfile.vhdl | ./RudeSim
+	cat tests/testfile.vhdl | ./RudeSim -d
