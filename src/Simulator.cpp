@@ -9,7 +9,7 @@
 #include <iostream>
 #include <map>
 #include <fstream>
-#include "generateVCD.cpp"
+#include <cmath>                //for decimal to binary
 
 #define REDTEXT "\033[1;31m"    //Use for errors
 #define YELLOWTEXT "\033[1;33m" //Use for warnings
@@ -32,7 +32,75 @@ void Simulator::visitCmpop(Cmpop *t) {}                                 //abstra
 void Simulator::visitLiteral(Literal *t) {}                             //abstract class
 void Simulator::visitType(Type *t) {}                                   //abstract class
 
+long long toBinary(int n)
+{
+    long long binaryNumber = 0;
+    int remainder, i = 1, step = 1;
+    while (n!=0) {
+        remainder = n%2;
+        n /= 2;
+        binaryNumber += remainder*i;
+        i *= 10;
+    }
+    return binaryNumber;
+}
 
+void Simulator::generateVCD(std::vector<simulation_state> *i, long int t){
+    time_t ttime = time(0);
+    char* dt = ctime(&ttime);
+    long int time = 0;
+    
+    std::ofstream outputFile;
+    outputFile.open("simulation.vcd");
+
+    //date
+    outputFile << "$date\n\t" << dt <<"$end\n";
+    //version
+    outputFile << "$version\n\t" << "GetVersion()" << "\n$end\n";
+    //timescale
+    outputFile << "$timescale\n\t" << t << "ps\n$end\n\n";
+    //scope module
+    outputFile << "$scope module " << "GetModuleName()" << " $end\n";
+    
+    //variables
+    outputFile << "$var wire 1 a a $end\n";
+    outputFile << "$var wire 1 b b $end\n";
+    outputFile << "$var wire 1 c c $end\n";
+    outputFile << "$var wire 1 d d $end\n";
+    outputFile << "$var wire 1 e e $end\n";
+    outputFile << "$var wire 1 f f $end\n";
+    outputFile << "$var wire 1 g g $end\n";
+    outputFile << "$var wire 6 h h $end\n";
+    outputFile << "$var wire 6 i i $end\n";
+    outputFile << "$var wire 32 j j $end\n";
+    outputFile << "$var wire 32 k k $end\n";
+    outputFile << "$upscope $end\n";
+    outputFile << "$enddefinitions $end\n";
+    outputFile << "#0\n";
+    outputFile << "$dumpvars\n";
+
+
+    for (simulation_state sim_state : *i){
+
+        outputFile << "#" << time << "\n";
+
+        for (std_logic_state a : sim_state.std_logics)
+            outputFile  << a.value <<  a.identifier << std::endl;
+     
+        for (integer_state b : sim_state.integers) 
+            outputFile  << "b" << toBinary(b.value) << " " << b.identifier << std::endl;
+
+        for (std_logic_vector_state c : sim_state.std_logic_vectors){ 
+            outputFile  << "b" << c.value << " " << c.identifier << std::endl;
+        }
+
+        outputFile << "$end\n";
+
+        time += t;
+    }
+
+    outputFile.close();
+}
 
 //extern std::vector<SignalType> rc_signals;
 //extern std::vector<PortType> rc_ports;
@@ -279,7 +347,7 @@ void Simulator::visitArch(Arch *arch)
 
     simulation_state X = simulation_states[0];
 
-    generateVCD(&simulation_states, simulation_time);
+    generateVCD(&simulation_states, simulation_time/simulation_steps);
 }
 
 
