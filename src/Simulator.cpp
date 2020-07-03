@@ -53,7 +53,8 @@ int visitedLitInt;            //When a visit to a literal Int occurs, or when a 
 char visitedLitChar;          //When a visit to a literal Char occurs, or when a STD_LOGIC expression is resolved into a value, this is used to return the value.
 std::string visitedLitString; //When a visit to a literal String occurs, or when a STD_LOGIC_VECTOR expression is resolved into a value, this is used to return the value.
 
-void Simulator::print(PrintType p, std::string s){
+void Simulator::print(PrintType p, std::string s)
+{
     switch (p)
     {
     case ERROR:
@@ -63,12 +64,14 @@ void Simulator::print(PrintType p, std::string s){
         std::cout << YELLOWTEXT << "WARNING: " << NORMTEXT << s << std::endl;
         break;
     case DEBUGINFO:
-        if(printDebugInfo){
+        if (printDebugInfo)
+        {
             std::cout << GREENTEXT << "DEBUG: " << NORMTEXT << s << std::endl;
         }
         break;
     case CURRENTSTATE:
-        if(printDebugInfo){
+        if (printDebugInfo)
+        {
             printState(current_state);
         }
         break;
@@ -158,7 +161,7 @@ void Simulator::printState(simulation_state s)
     std::cout << "\tstd_logics:" << std::endl;
     for (auto p : s.std_logics)
     {
-        std::cout << "\t\t" <<p.identifier << " = " << p.value << std::endl;
+        std::cout << "\t\t" << p.identifier << " = " << p.value << std::endl;
     }
     std::cout << "\tstd_logic_vectors:" << std::endl;
     for (auto p : s.std_logic_vectors)
@@ -168,7 +171,7 @@ void Simulator::printState(simulation_state s)
     std::cout << "\tIntegers:" << std::endl;
     for (auto p : s.integers)
     {
-        std::cout << "\t\t"<<  p.identifier << " = " << p.value << std::endl;
+        std::cout << "\t\t" << p.identifier << " = " << p.value << std::endl;
     }
     std::cout << "\n"
               << std::endl;
@@ -284,7 +287,7 @@ void Simulator::visitArch(Arch *arch)
         whilecounter = 0;
         while (!all_signals_are_updated)
         {
-            print(DEBUGINFO, "Step Iteration "  + std::to_string(whilecounter) + " events:");
+            print(DEBUGINFO, "Step Iteration " + std::to_string(whilecounter) + " events:");
             whilecounter++;
             //current_state_copy = current_state;
             arch->listpost_begin_statements_->accept(this);
@@ -456,13 +459,13 @@ void Simulator::visitConcurrent_Assignment(Concurrent_Assignment *concurrent_ass
         else
         {
             //then the visitedExprState is UNRESOLVED and we cant do anything this run
-            print(DEBUGINFO,"Signal " + concurrent_assignment->ident_ + " couldnt be assigned yet due to depending on signals that aren't done being simulated.");
+            print(DEBUGINFO, "Signal " + concurrent_assignment->ident_ + " couldnt be assigned yet due to depending on signals that aren't done being simulated.");
         }
     }
     else
     {
         //the symbol has already been updated and should therefore not be touched.
-        print(DEBUGINFO, "Skipping assignment to " + concurrent_assignment->ident_ + " since it is marked as done." );
+        print(DEBUGINFO, "Skipping assignment to " + concurrent_assignment->ident_ + " since it is marked as done.");
     }
 }
 
@@ -491,13 +494,13 @@ void Simulator::visitConcurrent_Assignment_W_AFTER(Concurrent_Assignment_W_AFTER
         else
         {
             //then the visitedExprState is UNRESOLVED and we cant do anything this run
-            print(DEBUGINFO, concurrent_assignment_w_after->ident_ +" couldnt be assigned yet due to depending on signals that aren't done being simulated." );
+            print(DEBUGINFO, concurrent_assignment_w_after->ident_ + " couldnt be assigned yet due to depending on signals that aren't done being simulated.");
         }
     }
     else
     {
         //the symbol has already been updated and should therefore not be touched.
-       print(DEBUGINFO,"Skipping assignment to " + concurrent_assignment_w_after->ident_ + " since it is marked as done." );
+        print(DEBUGINFO, "Skipping assignment to " + concurrent_assignment_w_after->ident_ + " since it is marked as done.");
     }
 }
 
@@ -688,10 +691,11 @@ void Simulator::visitE_Sub(E_Sub *e_sub)
 }
 std::string Simulator::invertString(std::string s)
 {
-    for(char& c : s) {
-        if(c == '0')
+    for (char &c : s)
+    {
+        if (c == '0')
             c = '1';
-        else if(c == '1')
+        else if (c == '1')
             c = '0';
     }
     return s;
@@ -729,6 +733,218 @@ void Simulator::visitE_Cmp(E_Cmp *e_cmp)
     e_cmp->exp_1->accept(this);
     e_cmp->cmpop_->accept(this);
     e_cmp->exp_2->accept(this);
+}
+void Simulator::visitE_AND(E_AND *e_and)
+{
+    /* Code For E_AND Goes Here */
+
+    char L_op_1;
+    std::string LV_op_1;
+    Expr_state firstState;
+    int i = 0;
+    char c2;
+
+    e_and->exp_1->accept(this);
+    if (visitedExprState == VALUE)
+    {
+        firstState = VALUE;
+        switch (visitedType)
+        {
+        case STD_LOGIC:
+            L_op_1 = visitedLitChar;
+            break;
+        case STD_LOGIC_VECTOR:
+            LV_op_1 = visitedLitString;
+            break;
+        case INTEGER:
+            print(WARNING, "AND operator used on integer, Ignoring it");
+            break;
+        }
+    }
+    e_and->exp_2->accept(this);
+    if (visitedExprState == VALUE && firstState == VALUE)
+    {
+        switch (visitedType)
+        {
+        case STD_LOGIC:
+            if ((L_op_1 != 'X') && (visitedLitChar != 'X'))
+            {
+                visitedLitChar = '0' + (char)(((int)L_op_1 - '0') & ((int)visitedLitChar - '0'));
+            }
+            else
+                visitedLitChar = 'X';
+            break;
+        case STD_LOGIC_VECTOR:
+            std::cout << "im here \n";
+            for (char &c1 : visitedLitString)
+            {
+                c2 = LV_op_1.at(i);
+                i++;
+
+                if ((c1 != 'X') && (c2 != 'X'))
+                {
+                    c1 = '0' + (char)(((int)c1 - '0') & ((int)c2 - '0'));
+                }
+                else
+                    c1 = 'X';
+            }
+            break;
+        case INTEGER:
+            print(WARNING, "AND operator used on integer, Ignoring it");
+            break;
+        }
+    }
+    else
+        visitedExprState = UNRESOLVED;
+}
+
+void Simulator::visitE_OR(E_OR *e_or)
+{
+    char L_op_1;
+    std::string LV_op_1;
+    Expr_state firstState;
+    int i = 0;
+    char c2;
+
+    e_or->exp_1->accept(this);
+    if (visitedExprState == VALUE)
+    {
+        firstState = VALUE;
+        switch (visitedType)
+        {
+        case STD_LOGIC:
+            L_op_1 = visitedLitChar;
+            break;
+        case STD_LOGIC_VECTOR:
+            LV_op_1 = visitedLitString;
+            break;
+        case INTEGER:
+            print(WARNING, "OR operator used on integer, Ignoring it");
+            break;
+        }
+    }
+    e_or->exp_2->accept(this);
+    if (visitedExprState == VALUE && firstState == VALUE)
+    {
+        switch (visitedType)
+        {
+        case STD_LOGIC:
+            if ((L_op_1 != 'X') && (visitedLitChar != 'X'))
+            {
+                visitedLitChar = '0' + (char)(((int)L_op_1 - '0') | ((int)visitedLitChar - '0'));
+            }
+            else
+                visitedLitChar = 'X';
+            break;
+        case STD_LOGIC_VECTOR:
+            std::cout << "im here \n";
+            for (char &c1 : visitedLitString)
+            {
+                c2 = LV_op_1.at(i);
+                i++;
+
+                if ((c1 != 'X') && (c2 != 'X'))
+                {
+                    c1 = '0' + (char)(((int)c1 - '0') | ((int)c2 - '0'));
+                }
+                else
+                    c1 = 'X';
+            }
+            break;
+        case INTEGER:
+            print(WARNING, "OR operator used on integer, Ignoring it");
+            break;
+        }
+    }
+    else
+        visitedExprState = UNRESOLVED;
+}
+
+void Simulator::visitE_XOR(E_XOR *e_xor)
+{
+    /* Code For E_XOR Goes Here */
+    char L_op_1;
+    std::string LV_op_1;
+    Expr_state firstState;
+    int i = 0;
+    char c2;
+
+    e_xor->exp_1->accept(this);
+    if (visitedExprState == VALUE)
+    {
+        firstState = VALUE;
+        switch (visitedType)
+        {
+        case STD_LOGIC:
+            L_op_1 = visitedLitChar;
+            break;
+        case STD_LOGIC_VECTOR:
+            LV_op_1 = visitedLitString;
+            break;
+        case INTEGER:
+            print(WARNING, "OR operator used on integer, Ignoring it");
+            break;
+        }
+    }
+    e_xor->exp_2->accept(this);
+    if (visitedExprState == VALUE && firstState == VALUE)
+    {
+        switch (visitedType)
+        {
+        case STD_LOGIC:
+            if ((L_op_1 != 'X') && (visitedLitChar != 'X'))
+            {
+                visitedLitChar = '0' + (char)(((int)L_op_1 - '0') ^ ((int)visitedLitChar - '0'));
+            }
+            else
+                visitedLitChar = 'X';
+            break;
+        case STD_LOGIC_VECTOR:
+            std::cout << "im here \n";
+            for (char &c1 : visitedLitString)
+            {
+                c2 = LV_op_1.at(i);
+                i++;
+
+                if ((c1 != 'X') && (c2 != 'X'))
+                {
+                    c1 = '0' + (char)(((int)c1 - '0') ^ ((int)c2 - '0'));
+                }
+                else
+                    c1 = 'X';
+            }
+            break;
+        case INTEGER:
+            print(WARNING, "OR operator used on integer, Ignoring it");
+            break;
+        }
+    }
+    else
+        visitedExprState = UNRESOLVED;
+}
+
+void Simulator::visitE_NAND(E_NAND *e_nand)
+{
+    /* Code For E_NAND Goes Here */
+
+    e_nand->exp_1->accept(this);
+    e_nand->exp_2->accept(this);
+}
+
+void Simulator::visitE_NOR(E_NOR *e_nor)
+{
+    /* Code For E_NOR Goes Here */
+
+    e_nor->exp_1->accept(this);
+    e_nor->exp_2->accept(this);
+}
+
+void Simulator::visitE_XNOR(E_XNOR *e_xnor)
+{
+    /* Code For E_XNOR Goes Here */
+
+    e_xnor->exp_1->accept(this);
+    e_xnor->exp_2->accept(this);
 }
 
 void Simulator::visitE_Equal(E_Equal *e_equal)

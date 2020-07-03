@@ -122,6 +122,13 @@ E_Less.  Cmpop ::= "<" ;
 
 E_More.  Cmpop ::= ">" ;
 
+E_AND. Exp1 ::= Exp1 "AND" Exp2 ;
+E_OR. Exp1 ::= Exp1 "OR" Exp2 ;
+E_XOR. Exp1 ::= Exp1 "XOR" Exp2 ;
+E_NAND. Exp1 ::= Exp1 "NAND" Exp2 ;
+E_NOR. Exp1 ::= Exp1 "NOR" Exp2 ;
+E_XNOR. Exp1 ::= Exp1 "XNOR" Exp2 ;
+
 -- Types ---------------
 
 Lit_string. Literal ::= String ; 

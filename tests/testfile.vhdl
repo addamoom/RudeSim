@@ -16,18 +16,20 @@ ARCHITECTURE test OF testThing IS
     SIGNAL f : STD_LOGIC ;
     SIGNAL g : STD_LOGIC := '1';
     SIGNAL h : STD_LOGIC_VECTOR(5 DOWNTO 0) := "000000";
+    SIGNAL l : STD_LOGIC_VECTOR(5 DOWNTO 0);
+    SIGNAL m : STD_LOGIC_VECTOR(5 DOWNTO 0);
     SIGNAL j : INTEGER := 4;
     SIGNAL k : INTEGER;
 
 BEGIN
-    f <= '1' ;
-    c <= f ;
-    d <= NOT e;
-    e <= '0', '1' AFTER 3 ps;
+    f <= '1', '0' AFTER 2 ps;
+    c <= '1' ;
+    d <= f XOR c;
+    --e <= f OR e;
     h <= "111100", "100111" AFTER 2 ps;
-    i <= NOT "111111";
-    j <= k;
-    k <= 10, 344 AFTER 2 ps, 26 AFTER 4 ps;
+    l <=  "111111";
+    m <=h XOR l;
+    --k <= 10, 344 AFTER 2 ps, 26 AFTER 4 ps;
     
 END ARCHITECTURE test ;
 

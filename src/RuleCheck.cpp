@@ -429,6 +429,59 @@ void RuleCheck::visitE_Cmp(E_Cmp *e_cmp)
     e_cmp->cmpop_->accept(this);
     e_cmp->exp_2->accept(this);
 }
+void RuleCheck::visitE_AND(E_AND *e_and)
+{
+  /* Code For E_AND Goes Here */
+
+  e_and->exp_1->accept(this);
+  e_and->exp_2->accept(this);
+
+}
+
+void RuleCheck::visitE_OR(E_OR *e_or)
+{
+  /* Code For E_OR Goes Here */
+
+  e_or->exp_1->accept(this);
+  e_or->exp_2->accept(this);
+
+}
+
+void RuleCheck::visitE_XOR(E_XOR *e_xor)
+{
+  /* Code For E_XOR Goes Here */
+
+  e_xor->exp_1->accept(this);
+  e_xor->exp_2->accept(this);
+
+}
+
+void RuleCheck::visitE_NAND(E_NAND *e_nand)
+{
+  /* Code For E_NAND Goes Here */
+
+  e_nand->exp_1->accept(this);
+  e_nand->exp_2->accept(this);
+
+}
+
+void RuleCheck::visitE_NOR(E_NOR *e_nor)
+{
+  /* Code For E_NOR Goes Here */
+
+  e_nor->exp_1->accept(this);
+  e_nor->exp_2->accept(this);
+
+}
+
+void RuleCheck::visitE_XNOR(E_XNOR *e_xnor)
+{
+  /* Code For E_XNOR Goes Here */
+
+  e_xnor->exp_1->accept(this);
+  e_xnor->exp_2->accept(this);
+
+}
 
 void RuleCheck::visitE_Equal(E_Equal *e_equal)
 {

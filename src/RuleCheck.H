@@ -5,7 +5,6 @@
 #include "../Absyn.H"
 #include "Types.H"
 
-
 class RuleCheck : public Visitor
 {
 public:
@@ -65,6 +64,12 @@ public:
     void visitE_Equal(E_Equal *p);
     void visitE_Less(E_Less *p);
     void visitE_More(E_More *p);
+    void visitE_AND(E_AND *p);
+    void visitE_OR(E_OR *p);
+    void visitE_XOR(E_XOR *p);
+    void visitE_NAND(E_NAND *p);
+    void visitE_NOR(E_NOR *p);
+    void visitE_XNOR(E_XNOR *p);
     void visitLit_string(Lit_string *p);
     void visitLit_int(Lit_int *p);
     void visitLit_char(Lit_char *lit_char);
@@ -90,15 +95,15 @@ public:
 
     int startRuleCheck(Visitable *t);
 
-    std::vector<SignalType>  signals;   //List of all declared Signals in current scope (scopes not implemented yet)
+    std::vector<SignalType> signals;    //List of all declared Signals in current scope (scopes not implemented yet)
     std::vector<PortType> entity_ports; //List of ports in the current scope. (scopes not implemented yet)
 
 private:
-    int returnvalue = 0;                // set this to one if errors are detected.
-    std::vector<std::string> entities;  //List of entities in the file.
-    std::vector<ArchType> archs;        //List of Architectures in file.
-    
-    std::vector<std::string>  symbols;  //List of all declared symbols, e.g. ports and signals, in current scope. (scope not implemented yet)
+    int returnvalue = 0;               // set this to one if errors are detected.
+    std::vector<std::string> entities; //List of entities in the file.
+    std::vector<ArchType> archs;       //List of Architectures in file.
+
+    std::vector<std::string> symbols; //List of all declared symbols, e.g. ports and signals, in current scope. (scope not implemented yet)
 
     Signal_Types visitedType;
 
