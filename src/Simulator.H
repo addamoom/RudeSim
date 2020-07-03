@@ -88,6 +88,7 @@ public:
     void visitString(String x);
     void visitIdent(Ident x);
 
+    void generateVCD(std::vector<simulation_state> *i, long int t);
     int startSimulation(Visitable *t);
 
 private:

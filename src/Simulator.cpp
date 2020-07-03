@@ -8,6 +8,8 @@
 #include "Types.H"
 #include <iostream>
 #include <map>
+#include <fstream>
+#include "generateVCD.cpp"
 
 #define REDTEXT "\033[1;31m"    //Use for errors
 #define YELLOWTEXT "\033[1;33m" //Use for warnings
@@ -30,6 +32,8 @@ void Simulator::visitCmpop(Cmpop *t) {}                                 //abstra
 void Simulator::visitLiteral(Literal *t) {}                             //abstract class
 void Simulator::visitType(Type *t) {}                                   //abstract class
 
+
+
 //extern std::vector<SignalType> rc_signals;
 //extern std::vector<PortType> rc_ports;
 
@@ -40,6 +44,7 @@ simulation_state init_state;                     //Hold the initial state.
 simulation_state current_state;                  //Holds the currently processed state, to avoid unnecessary vector operations.
 std::vector<simulation_state> simulation_states; //All the simulation states.
 long int current_time;
+
 
 //Symbol Information
 std::map<std::string, bool> symbolDoneTable;         //is the value of a symbol accurate in this time frame? always check this table before assigning
@@ -272,7 +277,11 @@ void Simulator::visitArch(Arch *arch)
         printState(current_state);
     }
 
+    simulation_state X = simulation_states[0];
+
+    generateVCD(&simulation_states, simulation_time);
 }
+
 
 void Simulator::visitInport(Inport *inport)
 {
