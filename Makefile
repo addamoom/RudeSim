@@ -12,7 +12,7 @@ OBJS = Absyn.o Lexer.o Parser.o Printer.o RuleCheck.o Simulator.o
 .PHONY: clean
 
 clean:
-	rm -f Absyn.C Absyn.H Test.C Parser.C Parser.H Lexer.C Skeleton.C Skeleton.H Printer.C Printer.H vhdl.l vhdl.y *.bak *.o TestSyntax
+	rm -f Absyn.C Absyn.H Test.C Parser.C Parser.H Lexer.C Skeleton.C Skeleton.H Printer.C Printer.H vhdl.l vhdl.y *.bak *.o TestSyntax RudeSim
 
 Absyn.H Absyn.C javalette.l javalette.y Parser.H Skeleton.H Skeleton.C Printer.H Printer.C Test.C: src/vhdl.cf
 	${BNFC} -cpp_stl src/vhdl.cf

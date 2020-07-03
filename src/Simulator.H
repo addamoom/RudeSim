@@ -94,6 +94,7 @@ public:
     void visitString(String x);
     void visitIdent(Ident x);
 
+    void generateVCD(std::vector<simulation_state> *i, long int t);
     int startSimulation(Visitable *t);
     long int convertToPs(int i, std::string u);
     long int simulation_time = 5; //time the simulation should run, in ps.
