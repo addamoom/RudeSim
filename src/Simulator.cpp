@@ -33,6 +33,33 @@ void Simulator::visitCmpop(Cmpop *t) {}                                 //abstra
 void Simulator::visitLiteral(Literal *t) {}                             //abstract class
 void Simulator::visitType(Type *t) {}                                   //abstract class
 
+
+
+//extern std::vector<SignalType> rc_signals;
+//extern std::vector<PortType> rc_ports;
+
+//Simulation parameters
+
+simulation_state init_state;                     //Hold the initial state.
+simulation_state current_state;                  //Holds the currently processed state, to avoid unnecessary vector operations.
+std::vector<simulation_state> simulation_states; //All the simulation states.
+long int current_time;
+
+
+//Symbol Information
+std::map<std::string, bool> symbolDoneTable;         //is the value of a symbol accurate in this time frame? always check this table before assigning
+std::map<std::string, Signal_Types> symbolTypeTable; //Holds the type of each symbol
+std::vector<PortType> current_portlist;              //holds temporary information about ports, which is then written into entity information
+std::map<std::string, int> std_logic_vector_lengths; //Holds the length of all logic vectors.
+
+//Expressions and visitor returns
+Signal_Types visitedType;     //when a visit to a type occurs, this is used to return that type
+Expr_state visitedExprState;  //what could the visited Expression be resolved into
+int visitedLitInt;            //When a visit to a literal Int occurs, or when a INTEGER expression is resolved into a value, this is used to return the value.
+char visitedLitChar;          //When a visit to a literal Char occurs, or when a STD_LOGIC expression is resolved into a value, this is used to return the value.
+std::string visitedLitString; //When a visit to a literal String occurs, or when a STD_LOGIC_VECTOR expression is resolved into a value, this is used to return the value.
+int visitedVectorLength;
+
 long long toBinary(int n)
 {
     long long binaryNumber = 0;
@@ -93,34 +120,9 @@ void Simulator::generateVCD(std::vector<simulation_state> *i, long int t){
 
         time += t;
     }
-
+    std::cout << std_logic_vector_lengths["i"] << std::endl;
     outputFile.close();
 }
-
-//extern std::vector<SignalType> rc_signals;
-//extern std::vector<PortType> rc_ports;
-
-//Simulation parameters
-
-simulation_state init_state;                     //Hold the initial state.
-simulation_state current_state;                  //Holds the currently processed state, to avoid unnecessary vector operations.
-std::vector<simulation_state> simulation_states; //All the simulation states.
-long int current_time;
-
-
-//Symbol Information
-std::map<std::string, bool> symbolDoneTable;         //is the value of a symbol accurate in this time frame? always check this table before assigning
-std::map<std::string, Signal_Types> symbolTypeTable; //Holds the type of each symbol
-std::vector<PortType> current_portlist;              //holds temporary information about ports, which is then written into entity information
-std::map<std::string, int> std_logic_vector_lengths; //Holds the length of all logic vectors.
-
-//Expressions and visitor returns
-Signal_Types visitedType;     //when a visit to a type occurs, this is used to return that type
-Expr_state visitedExprState;  //what could the visited Expression be resolved into
-int visitedLitInt;            //When a visit to a literal Int occurs, or when a INTEGER expression is resolved into a value, this is used to return the value.
-char visitedLitChar;          //When a visit to a literal Char occurs, or when a STD_LOGIC expression is resolved into a value, this is used to return the value.
-std::string visitedLitString; //When a visit to a literal String occurs, or when a STD_LOGIC_VECTOR expression is resolved into a value, this is used to return the value.
-int visitedVectorLength;
 
 void Simulator::print(PrintType p, std::string s)
 {
@@ -382,6 +384,10 @@ void Simulator::visitInport(Inport *inport)
     visitIdent(inport->ident_);
     inport->type_->accept(this);
     current_portlist.push_back(PortType(inport->ident_, visitedType, IN));
+    if(visitedType == STD_LOGIC_VECTOR){
+        std::cout << visitedVectorLength << std::endl;
+        std_logic_vector_lengths[inport->ident_] = visitedVectorLength;
+    }
 }
 
 void Simulator::visitOutport(Outport *outport)
@@ -391,6 +397,10 @@ void Simulator::visitOutport(Outport *outport)
     visitIdent(outport->ident_);
     outport->type_->accept(this);
     current_portlist.push_back(PortType(outport->ident_, visitedType, OUT));
+    if(visitedType == STD_LOGIC_VECTOR){
+        std::cout << visitedVectorLength << std::endl;
+        std_logic_vector_lengths[outport->ident_] = visitedVectorLength;
+    }
 }
 
 void Simulator::visitInoutport(Inoutport *inoutport)
@@ -400,6 +410,10 @@ void Simulator::visitInoutport(Inoutport *inoutport)
     visitIdent(inoutport->ident_);
     inoutport->type_->accept(this);
     current_portlist.push_back(PortType(inoutport->ident_, visitedType, INOUT));
+    if(visitedType == STD_LOGIC_VECTOR){
+        std::cout << visitedVectorLength << std::endl;
+        std_logic_vector_lengths[inoutport->ident_] = visitedVectorLength;
+    }
 }
 
 void Simulator::visitSignal_Decl(Signal_Decl *signal_decl)
