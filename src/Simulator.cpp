@@ -54,31 +54,25 @@ void Simulator::generateVCD(std::vector<simulation_state> *i, long int t){
     std::ofstream outputFile;
     outputFile.open("simulation.vcd");
 
-    //date
-    outputFile << "$date\n\t" << dt <<"$end\n";
-    //version
-    outputFile << "$version\n\t" << "GetVersion()" << "\n$end\n";
-    //timescale
-    outputFile << "$timescale\n\t" << t << "ps\n$end\n\n";
-    //scope module
-    outputFile << "$scope module " << "GetModuleName()" << " $end\n";
-    
-    //variables
-    outputFile << "$var wire 1 a a $end\n";
-    outputFile << "$var wire 1 b b $end\n";
-    outputFile << "$var wire 1 c c $end\n";
-    outputFile << "$var wire 1 d d $end\n";
-    outputFile << "$var wire 1 e e $end\n";
-    outputFile << "$var wire 1 f f $end\n";
-    outputFile << "$var wire 1 g g $end\n";
-    outputFile << "$var wire 6 h h $end\n";
-    outputFile << "$var wire 6 i i $end\n";
-    outputFile << "$var wire 32 j j $end\n";
-    outputFile << "$var wire 32 k k $end\n";
-    outputFile << "$upscope $end\n";
-    outputFile << "$enddefinitions $end\n";
-    outputFile << "#0\n";
-    outputFile << "$dumpvars\n";
+    outputFile << "$date\n\t" << dt <<"$end\n"
+               << "$version\n\t" << "GetVersion()" << "\n$end\n"
+               << "$timescale\n\t" << t << "ps\n$end\n\n"
+               << "$scope module " << "GetModuleName()" << " $end\n"
+               << "$var wire 1 a a $end\n"
+               << "$var wire 1 b b $end\n"
+               << "$var wire 1 c c $end\n"
+               << "$var wire 1 d d $end\n"
+               << "$var wire 1 e e $end\n"
+               << "$var wire 1 f f $end\n"
+               << "$var wire 1 g g $end\n"
+               << "$var wire 6 h h $end\n"
+               << "$var wire 6 i i $end\n"
+               << "$var wire 32 j j $end\n"
+               << "$var wire 32 k k $end\n"
+               << "$upscope $end\n"
+               << "$enddefinitions $end\n"
+               << "#0\n"
+               << "$dumpvars\n";
 
 
     for (simulation_state sim_state : *i){
@@ -89,7 +83,7 @@ void Simulator::generateVCD(std::vector<simulation_state> *i, long int t){
             outputFile  << a.value <<  a.identifier << std::endl;
      
         for (integer_state b : sim_state.integers) 
-            outputFile  << "b" << toBinary(b.value) << " " << b.identifier << std::endl;
+            outputFile  << "r" << b.value << " " << b.identifier << std::endl;
 
         for (std_logic_vector_state c : sim_state.std_logic_vectors){ 
             outputFile  << "b" << c.value << " " << c.identifier << std::endl;
