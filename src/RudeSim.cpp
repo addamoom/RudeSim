@@ -20,9 +20,9 @@ int main(int argc, char **argv)
 {
     clock_t start = clock();
 
-    int simulationTime = 10;
+    int simulationTime = 5;
     std::string simulationTimeUnit = "ps";
-    int simulationResolution = 10;
+    int simulationResolution = 5;
     FILE *input;
     std::string filename = "";
     int c;

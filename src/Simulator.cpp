@@ -118,6 +118,7 @@ long int current_time;
 std::map<std::string, bool> symbolDoneTable;         //is the value of a symbol accurate in this time frame? always check this table before assigning
 std::map<std::string, Signal_Types> symbolTypeTable; //Holds the type of each symbol
 std::vector<PortType> current_portlist;              //holds temporary information about ports, which is then written into entity information
+std::map<std::string, int> std_logic_vector_lengths; //Holds the length of all logic vectors.
 
 //Expressions and visitor returns
 Signal_Types visitedType;     //when a visit to a type occurs, this is used to return that type
@@ -125,6 +126,7 @@ Expr_state visitedExprState;  //what could the visited Expression be resolved in
 int visitedLitInt;            //When a visit to a literal Int occurs, or when a INTEGER expression is resolved into a value, this is used to return the value.
 char visitedLitChar;          //When a visit to a literal Char occurs, or when a STD_LOGIC expression is resolved into a value, this is used to return the value.
 std::string visitedLitString; //When a visit to a literal String occurs, or when a STD_LOGIC_VECTOR expression is resolved into a value, this is used to return the value.
+int visitedVectorLength;
 
 void Simulator::print(PrintType p, std::string s)
 {
@@ -421,6 +423,8 @@ void Simulator::visitSignal_Decl(Signal_Decl *signal_decl)
     {
         init_state.std_logic_vectors.push_back(std_logic_vector_state(signal_decl->ident_, "X"));
         symbolTypeTable[signal_decl->ident_] = STD_LOGIC_VECTOR;
+        std::cout << visitedVectorLength << std::endl;
+        std_logic_vector_lengths[signal_decl->ident_] = visitedVectorLength;
     }
     else //INTEGER
     {
@@ -445,6 +449,8 @@ void Simulator::visitSignal_Decl_W_Assign(Signal_Decl_W_Assign *signal_decl_w_as
     {
         init_state.std_logic_vectors.push_back(std_logic_vector_state(signal_decl_w_assign->ident_, visitedLitString));
         symbolTypeTable[signal_decl_w_assign->ident_] = STD_LOGIC_VECTOR;
+        std::cout << visitedVectorLength << std::endl;
+        std_logic_vector_lengths[signal_decl_w_assign->ident_] = visitedVectorLength;
     }
     else //INTEGER
     {
@@ -1078,6 +1084,7 @@ void Simulator::visitT_std_logic_vector(T_std_logic_vector *t_std_logic_vector)
     //visitInteger(t_std_logic_vector->integer_1);
     //visitInteger(t_std_logic_vector->integer_2);
     visitedType = STD_LOGIC_VECTOR;
+    visitedVectorLength = t_std_logic_vector->integer_1 - t_std_logic_vector->integer_2 + 1;
 }
 
 void Simulator::visitT_integer(T_integer *t_integer)
