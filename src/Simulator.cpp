@@ -135,6 +135,9 @@ void Simulator::generateVCD(std::vector<simulation_state> *i, long int t){
         time += t;
     }
     outputFile.close();
+
+    // run the the GTK Wave for the VCD file that was just generated
+    system("gtkwave -S simulation.tcl simulation.vcd & ");
 }
 
 void Simulator::print(PrintType p, std::string s)
