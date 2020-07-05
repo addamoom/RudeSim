@@ -74,29 +74,43 @@ long long toBinary(int n)
 }
 
 void Simulator::generateVCD(std::vector<simulation_state> *i, long int t){
-    time_t ttime = time(0);
-    char* dt = ctime(&ttime);
-    long int time = 0;
+    time_t          ttime = time(0);
+    char*           dt    = ctime(&ttime);
+    long int        time  = 0;
+
+    std::string     sigName;
+    Signal_Types    sigType;
+    int             sigLen;
     
     std::ofstream outputFile;
     outputFile.open("simulation.vcd");
 
+    std::map<std::string, Signal_Types>::iterator it = symbolTypeTable.begin();       
+
     outputFile << "$date\n\t" << dt <<"$end\n"
                << "$version\n\t" << "GetVersion()" << "\n$end\n"
                << "$timescale\n\t" << t << "ps\n$end\n\n"
-               << "$scope module " << "GetModuleName()" << " $end\n"
-               << "$var wire 1 a a $end\n"
-               << "$var wire 1 b b $end\n"
-               << "$var wire 1 c c $end\n"
-               << "$var wire 1 d d $end\n"
-               << "$var wire 1 e e $end\n"
-               << "$var wire 1 f f $end\n"
-               << "$var wire 1 g g $end\n"
-               << "$var wire 6 h h $end\n"
-               << "$var wire 6 i i $end\n"
-               << "$var wire 32 j j $end\n"
-               << "$var wire 32 k k $end\n"
-               << "$upscope $end\n"
+               << "$scope module " << "GetModuleName()" << " $end\n";
+
+    // print variables
+    do {
+        sigName = it->first;
+        sigType = it->second;
+        
+        if (sigType == 0)       // std_logic 
+            sigLen = 1;
+        else if (sigType == 1)  // std_logic_vector
+            sigLen = std_logic_vector_lengths[sigName];
+        else if (sigType == 2)  // integer                  
+            sigLen = 32;
+        else                    // in case we add more later
+            sigLen = -1;
+
+        outputFile  << "$var wire " << sigLen << " " << sigName << " " << sigName  << " $end\n";
+        it++;
+    } while (it != symbolTypeTable.end());
+
+    outputFile << "$upscope $end\n"
                << "$enddefinitions $end\n"
                << "#0\n"
                << "$dumpvars\n";
@@ -120,7 +134,6 @@ void Simulator::generateVCD(std::vector<simulation_state> *i, long int t){
 
         time += t;
     }
-    std::cout << std_logic_vector_lengths["i"] << std::endl;
     outputFile.close();
 }
 
