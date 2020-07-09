@@ -867,7 +867,6 @@ void Simulator::visitE_AND(E_AND *e_and)
                 visitedLitChar = 'X';
             break;
         case STD_LOGIC_VECTOR:
-            std::cout << "im here \n";
             for (char &c1 : visitedLitString)
             {
                 c2 = LV_op_1.at(i);
@@ -929,7 +928,6 @@ void Simulator::visitE_OR(E_OR *e_or)
                 visitedLitChar = 'X';
             break;
         case STD_LOGIC_VECTOR:
-            std::cout << "im here \n";
             for (char &c1 : visitedLitString)
             {
                 c2 = LV_op_1.at(i);
@@ -974,7 +972,7 @@ void Simulator::visitE_XOR(E_XOR *e_xor)
             LV_op_1 = visitedLitString;
             break;
         case INTEGER:
-            print(WARNING, "OR operator used on integer, Ignoring it");
+            print(WARNING, "XOR operator used on integer, Ignoring it");
             break;
         }
     }
@@ -992,7 +990,6 @@ void Simulator::visitE_XOR(E_XOR *e_xor)
                 visitedLitChar = 'X';
             break;
         case STD_LOGIC_VECTOR:
-            std::cout << "im here \n";
             for (char &c1 : visitedLitString)
             {
                 c2 = LV_op_1.at(i);
@@ -1007,7 +1004,7 @@ void Simulator::visitE_XOR(E_XOR *e_xor)
             }
             break;
         case INTEGER:
-            print(WARNING, "OR operator used on integer, Ignoring it");
+            print(WARNING, "XOR operator used on integer, Ignoring it");
             break;
         }
     }
@@ -1016,27 +1013,212 @@ void Simulator::visitE_XOR(E_XOR *e_xor)
 }
 
 void Simulator::visitE_NAND(E_NAND *e_nand)
-{
-    /* Code For E_NAND Goes Here */
+{  
+    char L_op_1;
+    std::string LV_op_1;
+    Expr_state firstState;
+    int i = 0;
+    char c2;
 
     e_nand->exp_1->accept(this);
+    if (visitedExprState == VALUE)
+    {
+        firstState = VALUE;
+        switch (visitedType)
+        {
+        case STD_LOGIC:
+            L_op_1 = visitedLitChar;
+            break;
+        case STD_LOGIC_VECTOR:
+            LV_op_1 = visitedLitString;
+            break;
+        case INTEGER:
+            print(WARNING, "NAND operator used on integer, Ignoring it");
+            break;
+        }
+    }
     e_nand->exp_2->accept(this);
+    if (visitedExprState == VALUE && firstState == VALUE)
+    {
+        switch (visitedType)
+        {
+        case STD_LOGIC:
+            if ((L_op_1 != 'X') && (visitedLitChar != 'X'))
+            {
+                    if (L_op_1 != visitedLitChar)
+                        visitedLitChar = '1';
+                    else if (L_op_1 == '1')
+                        visitedLitChar = '0';
+                    else
+                        visitedLitChar = '1';
+            }
+            else
+                visitedLitChar = 'X';
+            break;
+        case STD_LOGIC_VECTOR:
+            for (char &c1 : visitedLitString)
+            {
+                c2 = LV_op_1.at(i);
+                i++;
+
+                if ((c1 != 'X') && (c2 != 'X'))
+                {
+                    if (c1 != c2)
+                        c1 = '1';
+                    else if (c1 == '1')
+                        c1 = '0';
+                    else
+                        c1 = '1';
+                }
+                else
+                    c1 = 'X';
+            }
+            break;
+        case INTEGER:
+            print(WARNING, "NAND operator used on integer, Ignoring it");
+            break;
+        }
+    }
+    else
+        visitedExprState = UNRESOLVED;
 }
 
 void Simulator::visitE_NOR(E_NOR *e_nor)
 {
-    /* Code For E_NOR Goes Here */
+    char L_op_1;
+    std::string LV_op_1;
+    Expr_state firstState;
+    int i = 0;
+    char c2;
 
     e_nor->exp_1->accept(this);
+    if (visitedExprState == VALUE)
+    {
+        firstState = VALUE;
+        switch (visitedType)
+        {
+        case STD_LOGIC:
+            L_op_1 = visitedLitChar;
+            break;
+        case STD_LOGIC_VECTOR:
+            LV_op_1 = visitedLitString;
+            break;
+        case INTEGER:
+            print(WARNING, "NOR operator used on integer, Ignoring it");
+            break;
+        }
+    }
     e_nor->exp_2->accept(this);
+    if (visitedExprState == VALUE && firstState == VALUE)
+    {
+        switch (visitedType)
+        {
+        case STD_LOGIC:
+            if ((L_op_1 != 'X') && (visitedLitChar != 'X'))
+            {
+                    if ((L_op_1 == visitedLitChar) && (L_op_1 == '0'))
+                        visitedLitChar = '1';
+                    else
+                        visitedLitChar = '0';
+            }
+            else
+                visitedLitChar = 'X';
+            break;
+        case STD_LOGIC_VECTOR:
+            for (char &c1 : visitedLitString)
+            {
+                c2 = LV_op_1.at(i);
+                i++;
+
+                if ((c1 != 'X') && (c2 != 'X'))
+                {
+                    if ((c1 == c2) && (c1 == '0'))
+                        c1 = '1';
+                    else
+                        c1 = '0';
+                }
+                else
+                    c1 = 'X';
+            }
+            break;
+        case INTEGER:
+            print(WARNING, "NOR operator used on integer, Ignoring it");
+            break;
+        }
+    }
+    else
+        visitedExprState = UNRESOLVED;
 }
 
 void Simulator::visitE_XNOR(E_XNOR *e_xnor)
 {
     /* Code For E_XNOR Goes Here */
 
+    
+    
+        char L_op_1;
+    std::string LV_op_1;
+    Expr_state firstState;
+    int i = 0;
+    char c2;
+
     e_xnor->exp_1->accept(this);
+    if (visitedExprState == VALUE)
+    {
+        firstState = VALUE;
+        switch (visitedType)
+        {
+        case STD_LOGIC:
+            L_op_1 = visitedLitChar;
+            break;
+        case STD_LOGIC_VECTOR:
+            LV_op_1 = visitedLitString;
+            break;
+        case INTEGER:
+            print(WARNING, "XNOR operator used on integer, Ignoring it");
+            break;
+        }
+    }
     e_xnor->exp_2->accept(this);
+    if (visitedExprState == VALUE && firstState == VALUE)
+    {
+        switch (visitedType)
+        {
+        case STD_LOGIC:
+            if ((L_op_1 != 'X') && (visitedLitChar != 'X'))
+            {
+                    if (L_op_1 == visitedLitChar)
+                        visitedLitChar = '1';
+                    else
+                        visitedLitChar = '0';
+            }
+            else
+                visitedLitChar = 'X';
+            break;
+        case STD_LOGIC_VECTOR:
+            for (char &c1 : visitedLitString)
+            {
+                c2 = LV_op_1.at(i);
+                i++;
+
+                if ((c1 != 'X') && (c2 != 'X'))
+                {
+                    if (c1 == c2)
+                        c1 = '1';
+                    else
+                        c1 = '0';
+                }
+                else
+                    c1 = 'X';
+            }
+            break;
+        case INTEGER:
+            print(WARNING, "XNOR operator used on integer, Ignoring it");
+            break;
+        }
+    }
+    else
+        visitedExprState = UNRESOLVED;
 }
 
 void Simulator::visitE_Equal(E_Equal *e_equal)
