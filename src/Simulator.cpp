@@ -59,6 +59,9 @@ int visitedLitInt;            //When a visit to a literal Int occurs, or when a 
 char visitedLitChar;          //When a visit to a literal Char occurs, or when a STD_LOGIC expression is resolved into a value, this is used to return the value.
 std::string visitedLitString; //When a visit to a literal String occurs, or when a STD_LOGIC_VECTOR expression is resolved into a value, this is used to return the value.
 int visitedVectorLength;
+bool stopWhenEvaluation = false;  //is used when evaluating when statements, set to true when a when statement contition is fulfilled
+bool conditionalReturn;         //used to return value of conditional
+cmpops cmpop;              //used to return operator for conditionals
 
 long long toBinary(int n)
 {
@@ -600,8 +603,36 @@ void Simulator::visitWhen_Statement(When_Statement *when_statement)
 {
     /* Code For When_Statement Goes Here */
 
-    when_statement->exp_->accept(this);
-    when_statement->listwhen_part_->accept(this);
+    //visitIdent(when_statement->ident_);
+
+    if (symbolDoneTable[when_statement->ident_] == false)
+    {
+        //The symbol haven't been updated for this timeframe and we should therefore try to do that
+        when_statement->listwhen_part_->accept(this);
+        stopWhenEvaluation = false;
+
+        if (visitedExprState == VALUE)
+        {
+            //then we can do an assign and mark the symbol as done.
+            assignSignalfromLit(when_statement->ident_);
+            symbolDoneTable[when_statement->ident_] = true;
+        }
+        else if (visitedExprState == SYMBOL)
+        {
+            //then we need to look up if the symbol is done
+            //This state isn't currently used
+        }
+        else
+        {
+            //then the visitedExprState is UNRESOLVED and we cant do anything this run
+            print(DEBUGINFO, "Signal " + when_statement->ident_ + " couldnt be assigned yet due to depending on signals that aren't done being simulated.");
+        }
+    }
+    else
+    {
+        //the symbol has already been updated and should therefore not be touched.
+        print(DEBUGINFO, "Skipping assignment to " + when_statement->ident_ + " since it is marked as done.");
+    }
 }
 
 void Simulator::visitProcess_Statement(Process_Statement *process_statement)
@@ -627,18 +658,31 @@ void Simulator::visitWhen_Component(When_Component *when_component)
 {
     /* Code For When_Component Goes Here */
 
-    when_component->exp_1->accept(this);
-    visitIdent(when_component->ident_);
-    when_component->exp_2->accept(this);
+    //check if another when component has already triggered
+    if(stopWhenEvaluation == false){
+        //visit the condition
+        when_component->exp_2->accept(this);
+        if(visitedExprState == VALUE){
+            //check if it was true
+            if(conditionalReturn){
+                //if it was, visit the value expression. That will set the proper lit returns
+                when_component->exp_1->accept(this);
+                //make sure no following when components are activated.
+                stopWhenEvaluation = true;
+            }
+            //if it wasn't, then move on i guess      
+        }
+        else //then we cannot continue doing anythin in this state. visitedExprState will be unresolved and visitWhen_Statement will se this since no further expressions will be evaluated
+            stopWhenEvaluation = true;
+    }
+
 }
 
 void Simulator::visitWhen_Finisher(When_Finisher *when_finisher)
 {
-    /* Code For When_Finisher Goes Here */
-
-    when_finisher->exp_1->accept(this);
-    visitIdent(when_finisher->ident_);
-    when_finisher->exp_2->accept(this);
+    if(stopWhenEvaluation == false){
+        when_finisher->exp_->accept(this);
+    }
 }
 
 void Simulator::visitCase_Statement(Case_Statement *case_statement)
@@ -847,11 +891,138 @@ void Simulator::visitE_Not(E_Not *e_not)
 
 void Simulator::visitE_Cmp(E_Cmp *e_cmp)
 {
-    /* Code For E_Cmp Goes Here */
+    /* This is gonna be a huge mess... */
+
+    char SL_e1,SL_e2,c2;
+    std::string SLV_e1, SLV_e2;
+    int i_e1, i_e2;
+    int i = 0;
+
+    e_cmp->cmpop_->accept(this);
 
     e_cmp->exp_1->accept(this);
-    e_cmp->cmpop_->accept(this);
-    e_cmp->exp_2->accept(this);
+    if (visitedExprState == VALUE)
+    {
+        switch (visitedType)
+        {
+        case STD_LOGIC:
+            SL_e1 = visitedLitChar;
+            break;
+        case STD_LOGIC_VECTOR:
+            SLV_e1 = visitedLitString;
+            break;
+        case INTEGER:
+            i_e1 = visitedLitInt;
+            break;
+        }
+
+        e_cmp->exp_2->accept(this);
+        if (visitedExprState == VALUE)
+        {
+            switch (visitedType)
+            {
+            case STD_LOGIC:
+                SL_e2 = visitedLitChar;
+                break;
+            case STD_LOGIC_VECTOR:
+                SLV_e2 = visitedLitString;
+                break;
+            case INTEGER:
+                i_e2 = visitedLitInt;
+                break;
+            }
+        }
+        else
+            return;
+    }
+    else
+    {
+        return;
+    }
+
+    //Evaluate condition
+    switch (cmpop)
+    {
+    case EQUAL:
+        switch (visitedType)
+            {
+            case STD_LOGIC:
+                conditionalReturn = (SL_e1 == SL_e2);
+                break;
+            case STD_LOGIC_VECTOR:
+                conditionalReturn = (SLV_e1 == SLV_e2);
+                break;
+            case INTEGER:
+                conditionalReturn = (i_e1 == i_e2);
+                break;
+            }
+        break;
+    case LESS:
+        switch (visitedType)
+            {
+            case STD_LOGIC:
+                conditionalReturn = (SL_e1 < SL_e2);
+                break;
+            case STD_LOGIC_VECTOR:
+                if ((SLV_e1.find('X') != std::string::npos) || (SLV_e2.find('X') != std::string::npos)){
+                    //haven't solved what to do here
+                    print(WARNING, "Comparison done with not fully defined std_logic_vector, expect weird behaviour");
+                    break;
+                }
+                for (char &c1 : SLV_e1)
+                {
+                    c2 = SLV_e2.at(i);
+                    i++;
+                    if (c1 != c2)
+                    {
+                        if(c1 == '0')
+                            conditionalReturn = true;
+                        else
+                            conditionalReturn = false;
+                        break;
+                    }
+                }
+                i = 0;
+                break;
+            case INTEGER:
+                conditionalReturn = (i_e1 < i_e2);
+                break;
+            }
+        break;
+    case MORE:
+                switch (visitedType)
+            {
+            case STD_LOGIC:
+                conditionalReturn = (SL_e1 > SL_e2);
+                break;
+            case STD_LOGIC_VECTOR:
+                if ((SLV_e1.find('X') != std::string::npos) || (SLV_e2.find('X') != std::string::npos)){
+                    //haven't solved what to do here
+                    print(WARNING, "Comparison done with not fully defined std_logic_vector, expect weird behaviour");
+                    break;
+                }
+                for (char &c1 : SLV_e1)
+                {
+                    c2 = SLV_e2.at(i);
+                    i++;
+                    if (c1 != c2)
+                    {
+                        if(c1 == '0')
+                            conditionalReturn = false;
+                        else
+                            conditionalReturn = true;
+                        break;
+                    }
+                }
+                i = 0;
+                break;
+            case INTEGER:
+                conditionalReturn = (i_e1 > i_e2);
+                break;
+            }
+        break;
+        break;
+    }
 }
 void Simulator::visitE_AND(E_AND *e_and)
 {
@@ -1183,7 +1354,7 @@ void Simulator::visitE_XNOR(E_XNOR *e_xnor)
 
     
     
-        char L_op_1;
+    char L_op_1;
     std::string LV_op_1;
     Expr_state firstState;
     int i = 0;
@@ -1250,17 +1421,17 @@ void Simulator::visitE_XNOR(E_XNOR *e_xnor)
 
 void Simulator::visitE_Equal(E_Equal *e_equal)
 {
-    /* Code For E_Equal Goes Here */
+    cmpop = EQUAL;
 }
 
 void Simulator::visitE_Less(E_Less *e_less)
 {
-    /* Code For E_Less Goes Here */
+    cmpop = LESS;
 }
 
 void Simulator::visitE_More(E_More *e_more)
 {
-    /* Code For E_More Goes Here */
+    cmpop = MORE;
 }
 
 void Simulator::visitLit_string(Lit_string *lit_string)

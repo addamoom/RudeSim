@@ -27,6 +27,12 @@ enum PrintType
     DEBUGINFO,
     CURRENTSTATE
 };
+enum cmpops
+{
+    EQUAL,
+    LESS,
+    MORE
+};
 
 struct PortType
 {

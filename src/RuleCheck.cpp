@@ -271,7 +271,7 @@ void RuleCheck::visitWhen_Statement(When_Statement *when_statement)
 {
     /* Code For When_Statement Goes Here */
 
-    when_statement->exp_->accept(this);
+    visitIdent(when_statement->ident_);
     when_statement->listwhen_part_->accept(this);
 }
 
@@ -298,7 +298,6 @@ void RuleCheck::visitWhen_Component(When_Component *when_component)
     /* Code For When_Component Goes Here */
 
     when_component->exp_1->accept(this);
-    visitIdent(when_component->ident_);
     when_component->exp_2->accept(this);
 }
 
@@ -306,9 +305,7 @@ void RuleCheck::visitWhen_Finisher(When_Finisher *when_finisher)
 {
     /* Code For When_Finisher Goes Here */
 
-    when_finisher->exp_1->accept(this);
-    visitIdent(when_finisher->ident_);
-    when_finisher->exp_2->accept(this);
+    when_finisher->exp_->accept(this);
 }
 
 void RuleCheck::visitCase_Statement(Case_Statement *case_statement)
