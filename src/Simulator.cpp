@@ -768,18 +768,45 @@ void Simulator::visitE_Vector_Ref(E_Vector_Ref *e_vector_ref)
 
 void Simulator::visitE_Add(E_Add *e_add)
 {
-    /* Code For E_Add Goes Here */
+    int32_t term1;
+    int32_t term2;
+    int32_t res;
 
+    //This code was made to conditionally visit syntax, to improve performance with complicated expressions that results in a lot of unresolved visits
     e_add->exp_1->accept(this);
-    e_add->exp_2->accept(this);
+    if (visitedExprState == VALUE)
+    {
+        term1 = visitedLitInt;
+        e_add->exp_2->accept(this);
+        if (visitedExprState == VALUE){
+            //the "unnecessary" assignments are to handle overflow.
+            term2 = visitedLitInt;
+            res = term1 + term2;
+            visitedLitInt = res;
+        }
+    }
 }
 
 void Simulator::visitE_Sub(E_Sub *e_sub)
 {
-    /* Code For E_Sub Goes Here */
 
+    int32_t term1;
+    int32_t term2;
+    int32_t res;
+
+    //This code was made to conditionally visit syntax, to improve performance with complicated expressions that results in a lot of unresolved visits
     e_sub->exp_1->accept(this);
-    e_sub->exp_2->accept(this);
+    if (visitedExprState == VALUE)
+    {
+        term1 = visitedLitInt;
+        e_sub->exp_2->accept(this);
+        if (visitedExprState == VALUE){
+            //the "unnecessary" assignments are to handle overflow.
+            term2 = visitedLitInt;
+            res = term1 - term2;
+            visitedLitInt = res;
+        }
+    }
 }
 std::string Simulator::invertString(std::string s)
 {
