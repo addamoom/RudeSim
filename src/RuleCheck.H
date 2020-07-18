@@ -94,9 +94,12 @@ public:
     void visitIdent(Ident x);
 
     int startRuleCheck(Visitable *t);
+    
 
     std::vector<SignalType> signals;    //List of all declared Signals in current scope (scopes not implemented yet)
     std::vector<PortType> entity_ports; //List of ports in the current scope. (scopes not implemented yet)
+
+    bool printDebugInfo = false;
 
 private:
     int returnvalue = 0;               // set this to one if errors are detected.
@@ -109,6 +112,11 @@ private:
 
     void checkSymbolUniqueness(std::string s);
     void printErrorMessage(std::string s);
+    void print(PrintType p, std::string s);
+
+    std::string sigTypeToString[3] = {"STD_LOGIC", "STD_LOGIC_VECTOR", "INTEGER"}; //used to print the enum Signal_Types
+
+    int visitedVectorLength;
 };
 
 #endif

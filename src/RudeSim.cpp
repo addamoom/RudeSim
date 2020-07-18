@@ -88,6 +88,7 @@ int main(int argc, char **argv)
     }
 
     RuleCheck ruleChecker = RuleCheck();
+    ruleChecker.printDebugInfo = printDebugInfo;
 
     if (ruleChecker.startRuleCheck(parse_tree) == 0)
     {

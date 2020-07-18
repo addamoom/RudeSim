@@ -31,6 +31,29 @@ void RuleCheck::visitCmpop(Cmpop *t) {}                                 //abstra
 void RuleCheck::visitLiteral(Literal *t) {}                             //abstract class
 void RuleCheck::visitType(Type *t) {}                                   //abstract class
 
+
+void RuleCheck::print(PrintType p, std::string s)
+{
+    switch (p)
+    {
+    case ERROR:
+        std::cout << REDTEXT << "ERROR: " << NORMTEXT << s << std::endl;
+        returnvalue = 1;
+        break;
+    case WARNING:
+        std::cout << YELLOWTEXT << "WARNING: " << NORMTEXT << s << std::endl;
+        break;
+    case DEBUGINFO:
+        if (printDebugInfo)
+        {
+            std::cout << GREENTEXT << "DEBUG: " << NORMTEXT << s << std::endl;
+        }
+        break;
+    default:
+        break;
+    }
+}
+
 int RuleCheck::startRuleCheck(Visitable *t)
 {
     t->accept(this);
@@ -43,15 +66,15 @@ void RuleCheck::checkSymbolUniqueness(std::string s)
     {
         if (x == s)
         {
-            printErrorMessage("Symbol " + s + " declared more than once!");
+            print(ERROR, "Symbol " + s + " declared more than once!");
             returnvalue = 1;
         }
     }
 }
-void RuleCheck::printErrorMessage(std::string s)
-{
-    std::cout << REDTEXT << "ERROR: " << NORMTEXT << s << std::endl;
-}
+//void RuleCheck::printErrorMessage(std::string s)
+//{
+//    std::cout << REDTEXT << "ERROR: " << NORMTEXT << s << std::endl;
+//}
 
 void RuleCheck::visitProgram(Program *program)
 {
@@ -85,7 +108,7 @@ void RuleCheck::visitEntity(Entity *entity)
 
     if (entity->ident_1 != entity->ident_2)
     {
-        printErrorMessage("END label in Entity " + entity->ident_1 + " did not match entity name!");
+        print(ERROR, "END label in Entity " + entity->ident_1 + " did not match entity name!");
         returnvalue = 1;
     }
 
@@ -93,7 +116,7 @@ void RuleCheck::visitEntity(Entity *entity)
     {
         if (s == entity->ident_1)
         {
-            printErrorMessage("Several entities have the same label");
+            print(ERROR, "Several entities have the same label");
             returnvalue = 1;
         }
     }
@@ -112,20 +135,20 @@ void RuleCheck::visitArch(Arch *arch)
 
     if (arch->ident_1 != arch->ident_3)
     {
-        printErrorMessage("END label in Arch " + arch->ident_1 + " did not match arch!");
+        print(ERROR, "END label in Arch " + arch->ident_1 + " did not match arch!");
         returnvalue = 1;
     }
 
     if (std::find(entities.begin(), entities.end(), arch->ident_2) == entities.end())
     {
-        printErrorMessage("The Entity " + arch->ident_2 + " pointed to by architecture " + arch->ident_1 + " does not exist (yet)!");
+        print(ERROR, "The Entity " + arch->ident_2 + " pointed to by architecture " + arch->ident_1 + " does not exist (yet)!");
     }
 
     for (ArchType a : archs)
     {
         if ((a.label == arch->ident_1) && (a.entity == arch->ident_2))
         {
-            printErrorMessage("Several architectures of the same entity share labels");
+            print(ERROR, "Several architectures of the same entity share labels");
             returnvalue = 1;
         }
     }
@@ -184,21 +207,37 @@ void RuleCheck::visitInoutport(Inoutport *inoutport)
 
 void RuleCheck::visitSignal_Decl(Signal_Decl *signal_decl)
 {
-    /* Code For Signal_Decl Goes Here */
 
-    visitIdent(signal_decl->ident_);
-    signal_decl->type_->accept(this);
-
+    //check if identifier is unique
+    checkSymbolUniqueness(signal_decl->ident_);
     symbols.push_back(signal_decl->ident_);
+
+    //add signal to list of signals.
+    signal_decl->type_->accept(this);
+    signals.push_back(SignalType(signal_decl->ident_, visitedType));
+    
 }
 
 void RuleCheck::visitSignal_Decl_W_Assign(Signal_Decl_W_Assign *signal_decl_w_assign)
 {
-    /* Code For Signal_Decl_W_Assign Goes Here */
+    //Check if idetifier is unique;
+    checkSymbolUniqueness(signal_decl_w_assign->ident_);
+    symbols.push_back(signal_decl_w_assign->ident_);
 
-    visitIdent(signal_decl_w_assign->ident_);
+    //add signal to list of signals.
     signal_decl_w_assign->type_->accept(this);
+    signals.push_back(SignalType(signal_decl_w_assign->ident_, visitedType));
+
+    // check so that its assigned a value of correct type and length 
+    Signal_Types declared_type = visitedType;
+    int prevLength = visitedVectorLength;
     signal_decl_w_assign->literal_->accept(this);
+    if (visitedType != declared_type){
+        print(ERROR, "Signal declaration for a signal of type " + sigTypeToString[declared_type] + " does not match the initialization values type, " + sigTypeToString[visitedType]);
+    }
+    else if((visitedType == STD_LOGIC_VECTOR) && (prevLength != visitedVectorLength)){ 
+        print(ERROR, "A STD_LOGIC_VECTOR is declared with length " + std::to_string(prevLength) + ", which doesn't match the assigned vector length of " + std::to_string(visitedVectorLength));
+    }
 }
 
 void RuleCheck::visitConstant_Decl(Constant_Decl *constant_decl)
@@ -499,21 +538,25 @@ void RuleCheck::visitLit_string(Lit_string *lit_string)
 {
     /* Code For Lit_string Goes Here */
 
-    visitString(lit_string->string_);
+    //visitString(lit_string->string_);
+    visitedType = STD_LOGIC_VECTOR;
+    visitedVectorLength = lit_string->string_.length();
 }
 
 void RuleCheck::visitLit_int(Lit_int *lit_int)
 {
     /* Code For Lit_int Goes Here */
 
-    visitInteger(lit_int->integer_);
+    //visitInteger(lit_int->integer_);
+    visitedType = INTEGER;
 }
 
 void RuleCheck::visitLit_char(Lit_char *lit_char)
 {
     /* Code For Lit_char Goes Here */
 
-    visitChar(lit_char->char_);
+    //visitChar(lit_char->char_);
+    visitedType = STD_LOGIC;
 }
 
 void RuleCheck::visitT_std_logic(T_std_logic *t_std_logic)
@@ -526,8 +569,11 @@ void RuleCheck::visitT_std_logic_vector(T_std_logic_vector *t_std_logic_vector)
 {
     /* Code For T_std_logic_vector Goes Here */
 
-    visitInteger(t_std_logic_vector->integer_1);
-    visitInteger(t_std_logic_vector->integer_2);
+    //visitInteger(t_std_logic_vector->integer_1);
+    //visitInteger(t_std_logic_vector->integer_2);
+    visitedType = STD_LOGIC_VECTOR;
+    visitedVectorLength = t_std_logic_vector->integer_1 - t_std_logic_vector->integer_2 + 1;
+
 }
 
 void RuleCheck::visitT_integer(T_integer *t_integer)

@@ -50,9 +50,9 @@ struct PortType
 struct SignalType
 {
     std::string identifier;
-    std::string type;
+    Signal_Types type;
 
-    SignalType(std::string i, std::string t)
+    SignalType(std::string i, Signal_Types t)
     {
         identifier = i;
         type = t;
@@ -133,6 +133,5 @@ struct simulation_state
         
     }
 };
-
 
 #endif
