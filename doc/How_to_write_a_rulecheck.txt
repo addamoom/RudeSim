@@ -1,0 +1,22 @@
+What are all the methods:
+    Most of the statements in the vhdl.cf file corresponds to a visitor function in rulecheck.cpp, e.g. 
+        Arch. TopDef  ::= "ARCHITECTURE" Ident "OF" Ident "IS" [Pre_begin_statements] "BEGIN" [Post_begin_statements] "END" "ARCHITECTURE" Ident ";" ; 
+    corresponds to the method 
+        void RuleCheck::visitArch(Arch *arch)
+How to get the "parameters" from them
+    For the basic types, Ident, String Integer and Char, they are part of the object given to the method. (A ident is basically just a string)
+    E.g. for visitArch the three Idents are refered to like: arch->ident_1, arch->ident_2 and arch->ident_3.
+    
+    To get values from visitors dispatched within the method, the easiest method (although a bit ugly) is to use global variables.
+    If the method you are working in is dispatching a call to a visitor that could be e.g. an expression of any type, 
+    and you need to know which type it was, you could make all the possible visitors write their type to a common global variable.
+    then, after the dispatch you read the value of that global to determine what type was visited.
+    In the Rulechecker i just have a few of these as of now, but if you look in the simulators .H file and also in the top of the cpp file
+    you will se examples and sometimes explanations of many more. The ones in the rulechecker are currently:
+
+        visitedType - Is set in every visit to a type and can therefore be used further down in the visitor chain to determine the last visited type.
+        visitedVectorLength -   is calculated upon declaration of a std_logic_vector. Is currently only used to determine if
+                                initial value assignments have the correct length, but should in the future in the declaration then be added to a table that
+                                keeps track of all vectors length so that one can check that only signal sof the same length are assigned.
+
+Ive added comments to many of the rulechecks that are in place so that you should be able to see how they work
