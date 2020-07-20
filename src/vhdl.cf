@@ -71,7 +71,7 @@ When_Component. When_part ::= Exp "WHEN" Exp ;
 
 When_Finisher. When_part ::= Exp ;
 
-Process_Statement. Concurrent_statement ::= Ident ":" "process" "(" [Ident] ")" "BEGIN" [Sequential_statement] "END PROCESS" ";" ;
+Process_Statement. Concurrent_statement ::= Ident ":" "PROCESS" "(" [Ident] ")" "BEGIN" [Sequential_statement] "END PROCESS" ";" ;
 
 separator Ident "," ;
 

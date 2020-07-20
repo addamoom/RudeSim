@@ -107,7 +107,7 @@ private:
     std::vector<EntityType> entities; //List of entities in the file.
     void printState(simulation_state s);
     bool check_if_all_signals_are_updated();
-    void assignSignalfromLit(std::string i);
+    void assignSignalfromLit(std::string i, simulation_state *st);
     std::string invertString(std::string s);
     void print(PrintType p, std::string s);
 };

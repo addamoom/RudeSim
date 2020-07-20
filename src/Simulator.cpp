@@ -10,7 +10,7 @@
 #include <map>
 #include <time.h>
 #include <fstream>
-#include <cmath>                //for decimal to binary
+#include <cmath> //for decimal to binary
 
 #define REDTEXT "\033[1;31m"    //Use for errors
 #define YELLOWTEXT "\033[1;33m" //Use for warnings
@@ -33,8 +33,6 @@ void Simulator::visitCmpop(Cmpop *t) {}                                 //abstra
 void Simulator::visitLiteral(Literal *t) {}                             //abstract class
 void Simulator::visitType(Type *t) {}                                   //abstract class
 
-
-
 //extern std::vector<SignalType> rc_signals;
 //extern std::vector<PortType> rc_ports;
 
@@ -42,12 +40,13 @@ void Simulator::visitType(Type *t) {}                                   //abstra
 
 simulation_state init_state;                     //Hold the initial state.
 simulation_state current_state;                  //Holds the currently processed state, to avoid unnecessary vector operations.
+simulation_state process_state;                  //Holds the changes to signals during a process update.
 std::vector<simulation_state> simulation_states; //All the simulation states.
 long int current_time;
 
-
 //Symbol Information
 std::map<std::string, bool> symbolDoneTable;         //is the value of a symbol accurate in this time frame? always check this table before assigning
+std::map<std::string, bool> symbolAssignTable;       //should a symbol actually be updated this time frame? if the symbol is in here and returns true then yes.
 std::map<std::string, Signal_Types> symbolTypeTable; //Holds the type of each symbol
 std::vector<PortType> current_portlist;              //holds temporary information about ports, which is then written into entity information
 std::map<std::string, int> std_logic_vector_lengths; //Holds the length of all logic vectors.
@@ -59,35 +58,42 @@ int visitedLitInt;            //When a visit to a literal Int occurs, or when a 
 char visitedLitChar;          //When a visit to a literal Char occurs, or when a STD_LOGIC expression is resolved into a value, this is used to return the value.
 std::string visitedLitString; //When a visit to a literal String occurs, or when a STD_LOGIC_VECTOR expression is resolved into a value, this is used to return the value.
 int visitedVectorLength;
-bool stopWhenEvaluation = false;  //is used when evaluating when statements, set to true when a when statement contition is fulfilled
-bool conditionalReturn;         //used to return value of conditional
-cmpops cmpop;              //used to return operator for conditionals
+bool stopWhenEvaluation = false;        //is used when evaluating when statements, set to true when a when statement contition is fulfilled
+bool conditionalReturn;                 //used to return value of conditional
+cmpops cmpop;                           //used to return operator for conditionals
+std::vector<std::string> visitedIdents; //used for processes to get the signals in the sensitivity list.
 
 long long toBinary(int n)
 {
     long long binaryNumber = 0;
     int remainder, i = 1, step = 1;
-    while (n!=0) {
-        remainder = n%2;
+    while (n != 0)
+    {
+        remainder = n % 2;
         n /= 2;
-        binaryNumber += remainder*i;
+        binaryNumber += remainder * i;
         i *= 10;
     }
     return binaryNumber;
 }
 
-void Simulator::generateVCD(std::vector<simulation_state> *i, long int t){
+void Simulator::generateVCD(std::vector<simulation_state> *i, long int t)
+{
     time_t ttime = time(0);
-    char* dt = ctime(&ttime);
+    char *dt = ctime(&ttime);
     long int time = 0;
-    
+
     std::ofstream outputFile;
     outputFile.open("simulation.vcd");
 
-    outputFile << "$date\n\t" << dt <<"$end\n"
-               << "$version\n\t" << "GetVersion()" << "\n$end\n"
+    outputFile << "$date\n\t" << dt << "$end\n"
+               << "$version\n\t"
+               << "GetVersion()"
+               << "\n$end\n"
                << "$timescale\n\t" << t << "ps\n$end\n\n"
-               << "$scope module " << "GetModuleName()" << " $end\n"
+               << "$scope module "
+               << "GetModuleName()"
+               << " $end\n"
                << "$var wire 1 a a $end\n"
                << "$var wire 1 b b $end\n"
                << "$var wire 1 c c $end\n"
@@ -104,19 +110,20 @@ void Simulator::generateVCD(std::vector<simulation_state> *i, long int t){
                << "#0\n"
                << "$dumpvars\n";
 
-
-    for (simulation_state sim_state : *i){
+    for (simulation_state sim_state : *i)
+    {
 
         outputFile << "#" << time << "\n";
 
         for (std_logic_state a : sim_state.std_logics)
-            outputFile  << a.value <<  a.identifier << std::endl;
-     
-        for (integer_state b : sim_state.integers) 
-            outputFile  << "r" << b.value << " " << b.identifier << std::endl;
+            outputFile << a.value << a.identifier << std::endl;
 
-        for (std_logic_vector_state c : sim_state.std_logic_vectors){ 
-            outputFile  << "b" << c.value << " " << c.identifier << std::endl;
+        for (integer_state b : sim_state.integers)
+            outputFile << "r" << b.value << " " << b.identifier << std::endl;
+
+        for (std_logic_vector_state c : sim_state.std_logic_vectors)
+        {
+            outputFile << "b" << c.value << " " << c.identifier << std::endl;
         }
 
         outputFile << "$end\n";
@@ -175,14 +182,14 @@ long int Simulator::convertToPs(int i, std::string u)
     }
 }
 
-void Simulator::assignSignalfromLit(std::string i)
+void Simulator::assignSignalfromLit(std::string i, simulation_state *st)
 {
     //This method is used to assing a value to a signal from a resolved expression. If the expression isn't resolved, or the required parameters not set, expect wierd behavior
     //Relies on that visitedLit* has been set properly in the expression that should be assigned into the value.
     switch (symbolTypeTable[i])
     {
     case STD_LOGIC:
-        for (auto &s : current_state.std_logics) //the & gives a reference instead of copy, so we can change the value.
+        for (auto &s : st->std_logics) //the & gives a reference instead of copy, so we can change the value.
         {
             if (s.identifier == i)
             {
@@ -192,7 +199,7 @@ void Simulator::assignSignalfromLit(std::string i)
         }
         break;
     case STD_LOGIC_VECTOR:
-        for (auto &s : current_state.std_logic_vectors) //the & gives a reference instead of copy, so we can change the value.
+        for (auto &s : st->std_logic_vectors) //the & gives a reference instead of copy, so we can change the value.
         {
             if (s.identifier == i)
             {
@@ -202,7 +209,7 @@ void Simulator::assignSignalfromLit(std::string i)
         }
         break;
     case INTEGER:
-        for (auto &s : current_state.integers) //the & gives a reference instead of copy, so we can change the value.
+        for (auto &s : st->integers) //the & gives a reference instead of copy, so we can change the value.
         {
             if (s.identifier == i)
             {
@@ -221,11 +228,13 @@ bool Simulator::check_if_all_signals_are_updated()
     {
         if (!t.second)
         {
-            print(DEBUGINFO, "All signals weren't updated, gonna iterate the concurent statements again");
-            return false;
+            if(symbolAssignTable[t.first]){
+                print(DEBUGINFO, "All signals weren't updated, gonna iterate the concurent statements again");
+                return false;
+            }
         }
     }
-    print(DEBUGINFO, "All signals were updated, time frame is complete");
+    print(DEBUGINFO, "All signals were updated, going one more time to check process triggering");
     return true;
 }
 
@@ -348,7 +357,7 @@ void Simulator::visitArch(Arch *arch)
     simulation_states.push_back(init_state);
 
     //now all signals should be initialized. lets move on to simulation
-
+    //this is a big mess and shold be moved to a separate dispatcher that can handle simulating several arches at the same time.
     for (int i = 1; i < simulation_steps + 1; i++)
     {
         current_state = simulation_states.at(i - 1);
@@ -356,6 +365,7 @@ void Simulator::visitArch(Arch *arch)
         for (auto &a : symbolDoneTable)
             a.second = false;
         all_signals_are_updated = false;
+        symbolAssignTable.clear();
 
         print(DEBUGINFO, "\n--------------------Simulation state " + std::to_string(i) + "------------------------");
         whilecounter = 0;
@@ -369,6 +379,11 @@ void Simulator::visitArch(Arch *arch)
 
             //kontrollera currstate efter förändringar
         }
+        //for some cases we actually need to go another time, so we do that!
+        print(DEBUGINFO, "Step Iteration " + std::to_string(whilecounter) + " events:");
+        whilecounter++;
+        arch->listpost_begin_statements_->accept(this);
+
         simulation_states.push_back(current_state);
         print(DEBUGINFO, "Completed state status:");
         printState(current_state);
@@ -376,9 +391,8 @@ void Simulator::visitArch(Arch *arch)
 
     simulation_state X = simulation_states[0];
 
-    generateVCD(&simulation_states, simulation_time/simulation_steps);
+    generateVCD(&simulation_states, simulation_time / simulation_steps);
 }
-
 
 void Simulator::visitInport(Inport *inport)
 {
@@ -387,7 +401,8 @@ void Simulator::visitInport(Inport *inport)
     visitIdent(inport->ident_);
     inport->type_->accept(this);
     current_portlist.push_back(PortType(inport->ident_, visitedType, IN));
-    if(visitedType == STD_LOGIC_VECTOR){
+    if (visitedType == STD_LOGIC_VECTOR)
+    {
         std::cout << visitedVectorLength << std::endl;
         std_logic_vector_lengths[inport->ident_] = visitedVectorLength;
     }
@@ -400,7 +415,8 @@ void Simulator::visitOutport(Outport *outport)
     visitIdent(outport->ident_);
     outport->type_->accept(this);
     current_portlist.push_back(PortType(outport->ident_, visitedType, OUT));
-    if(visitedType == STD_LOGIC_VECTOR){
+    if (visitedType == STD_LOGIC_VECTOR)
+    {
         std::cout << visitedVectorLength << std::endl;
         std_logic_vector_lengths[outport->ident_] = visitedVectorLength;
     }
@@ -413,7 +429,8 @@ void Simulator::visitInoutport(Inoutport *inoutport)
     visitIdent(inoutport->ident_);
     inoutport->type_->accept(this);
     current_portlist.push_back(PortType(inoutport->ident_, visitedType, INOUT));
-    if(visitedType == STD_LOGIC_VECTOR){
+    if (visitedType == STD_LOGIC_VECTOR)
+    {
         std::cout << visitedVectorLength << std::endl;
         std_logic_vector_lengths[inoutport->ident_] = visitedVectorLength;
     }
@@ -535,6 +552,7 @@ void Simulator::visitPort_Map_Internal_Statement(Port_Map_Internal_Statement *po
 void Simulator::visitConcurrent_Assignment(Concurrent_Assignment *concurrent_assignment)
 {
     /* Code For Concurrent_Assignment Goes Here */
+    symbolAssignTable[concurrent_assignment->ident_] = true;
 
     if (symbolDoneTable[concurrent_assignment->ident_] == false)
     {
@@ -543,7 +561,7 @@ void Simulator::visitConcurrent_Assignment(Concurrent_Assignment *concurrent_ass
         if (visitedExprState == VALUE)
         {
             //then we can do an assign and mark the symbol as done.
-            assignSignalfromLit(concurrent_assignment->ident_);
+            assignSignalfromLit(concurrent_assignment->ident_, &current_state);
             symbolDoneTable[concurrent_assignment->ident_] = true;
         }
         else if (visitedExprState == SYMBOL)
@@ -568,6 +586,7 @@ void Simulator::visitConcurrent_Assignment_W_AFTER(Concurrent_Assignment_W_AFTER
 {
     /* Code For Concurrent_Assignment_W_AFTER Goes Here */
     //visitIdent(concurrent_assignment_w_after->ident_);
+    symbolAssignTable[concurrent_assignment_w_after->ident_] = true;
 
     if (symbolDoneTable[concurrent_assignment_w_after->ident_] == false)
     {
@@ -578,7 +597,7 @@ void Simulator::visitConcurrent_Assignment_W_AFTER(Concurrent_Assignment_W_AFTER
         if (visitedExprState == VALUE)
         {
             //then we can do an assign and mark the symbol as done.
-            assignSignalfromLit(concurrent_assignment_w_after->ident_);
+            assignSignalfromLit(concurrent_assignment_w_after->ident_, &current_state);
             symbolDoneTable[concurrent_assignment_w_after->ident_] = true;
         }
         else if (visitedExprState == SYMBOL)
@@ -604,6 +623,7 @@ void Simulator::visitWhen_Statement(When_Statement *when_statement)
     /* Code For When_Statement Goes Here */
 
     //visitIdent(when_statement->ident_);
+    symbolAssignTable[when_statement->ident_] = true;
 
     if (symbolDoneTable[when_statement->ident_] == false)
     {
@@ -614,7 +634,7 @@ void Simulator::visitWhen_Statement(When_Statement *when_statement)
         if (visitedExprState == VALUE)
         {
             //then we can do an assign and mark the symbol as done.
-            assignSignalfromLit(when_statement->ident_);
+            assignSignalfromLit(when_statement->ident_, &current_state);
             symbolDoneTable[when_statement->ident_] = true;
         }
         else if (visitedExprState == SYMBOL)
@@ -637,11 +657,90 @@ void Simulator::visitWhen_Statement(When_Statement *when_statement)
 
 void Simulator::visitProcess_Statement(Process_Statement *process_statement)
 {
-    /* Code For Process_Statement Goes Here */
 
-    visitIdent(process_statement->ident_);
+    //get the sensitivity list
     process_statement->listident_->accept(this);
-    process_statement->listsequential_statement_->accept(this);
+
+    //scan it for changes.
+    bool updateProcess = false;
+    for (auto s : visitedIdents)
+    {
+        switch (symbolTypeTable[s])
+        {
+        case STD_LOGIC:
+            for (auto v : simulation_states.back().std_logics)
+            {
+                if (v.identifier == s)
+                {
+                    for (auto p : current_state.std_logics)
+                    {
+                        if (p.identifier == s)
+                        {
+                            if (p.value != v.value)
+                            {
+                                updateProcess = true;
+                                std::cout << "process should update this time frame." << std::endl;
+                            }
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+            break;
+        case STD_LOGIC_VECTOR:
+            for (auto v : simulation_states.back().std_logic_vectors)
+            {
+                if (v.identifier == s)
+                {
+                    for (auto p : current_state.std_logic_vectors)
+                    {
+                        if (p.identifier == s)
+                        {
+                            if (p.value != v.value)
+                            {
+                                updateProcess = true;
+                                std::cout << "process should update this time frame." << std::endl;
+                            }
+                        }
+                    }
+                }
+            }
+            break;
+        case INTEGER:
+            for (auto v : simulation_states.back().integers)
+            {
+                if (v.identifier == s)
+                {
+                    for (auto p : current_state.integers)
+                    {
+                        if (p.identifier == s)
+                        {
+                            if (p.value != v.value)
+                            {
+                                updateProcess = true;
+                                std::cout << "process should update this time frame." << std::endl;
+                            }
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        if (updateProcess) //skip unnecessary loops for performance
+            break;
+    }
+    visitedIdents.clear();
+
+    if (updateProcess)
+    {
+        //now let the statements do their thing on process_state
+        process_state = current_state;
+        process_statement->listsequential_statement_->accept(this);
+
+        //And finally write the changes back into current_state
+        current_state = process_state;
+    }
 }
 
 void Simulator::visitAfter_Component(After_Component *after_component)
@@ -659,28 +758,31 @@ void Simulator::visitWhen_Component(When_Component *when_component)
     /* Code For When_Component Goes Here */
 
     //check if another when component has already triggered
-    if(stopWhenEvaluation == false){
+    if (stopWhenEvaluation == false)
+    {
         //visit the condition
         when_component->exp_2->accept(this);
-        if(visitedExprState == VALUE){
+        if (visitedExprState == VALUE)
+        {
             //check if it was true
-            if(conditionalReturn){
+            if (conditionalReturn)
+            {
                 //if it was, visit the value expression. That will set the proper lit returns
                 when_component->exp_1->accept(this);
                 //make sure no following when components are activated.
                 stopWhenEvaluation = true;
             }
-            //if it wasn't, then move on i guess      
+            //if it wasn't, then move on i guess
         }
         else //then we cannot continue doing anythin in this state. visitedExprState will be unresolved and visitWhen_Statement will se this since no further expressions will be evaluated
             stopWhenEvaluation = true;
     }
-
 }
 
 void Simulator::visitWhen_Finisher(When_Finisher *when_finisher)
 {
-    if(stopWhenEvaluation == false){
+    if (stopWhenEvaluation == false)
+    {
         when_finisher->exp_->accept(this);
     }
 }
@@ -722,10 +824,37 @@ void Simulator::visitWait_For_Statement(Wait_For_Statement *wait_for_statement)
 
 void Simulator::visitSeq_Assignment(Seq_Assignment *seq_assignment)
 {
-    /* Code For Seq_Assignment Goes Here */
 
-    visitIdent(seq_assignment->ident_);
-    seq_assignment->exp_->accept(this);
+    symbolAssignTable[seq_assignment->ident_] = true;
+
+    if (symbolDoneTable[seq_assignment->ident_] == false)
+    {
+        //The symbol haven't been updated for this timeframe and we should therefore try to do that
+        
+        seq_assignment->exp_->accept(this);
+        if (visitedExprState == VALUE)
+        {
+            //then we can do an assign and mark the symbol as done.
+            assignSignalfromLit(seq_assignment->ident_, &process_state);
+            symbolDoneTable[seq_assignment->ident_] = true;
+            
+        }
+        else if (visitedExprState == SYMBOL)
+        {
+            //then we need to look up if the symbol is done
+            //This state isn't currently used
+        }
+        else
+        {
+            //then the visitedExprState is UNRESOLVED and we cant do anything this run
+            print(DEBUGINFO, "Signal " + seq_assignment->ident_ + " couldnt be assigned yet due to depending on signals that aren't done being simulated.");
+        }
+    }
+    else
+    {
+        //the symbol has already been updated and should therefore not be touched.
+        print(DEBUGINFO, "Skipping assignment to " + seq_assignment->ident_ + " since it is marked as done.");
+    }
 }
 
 void Simulator::visitCase_Case(Case_Case *case_case)
@@ -822,7 +951,8 @@ void Simulator::visitE_Add(E_Add *e_add)
     {
         term1 = visitedLitInt;
         e_add->exp_2->accept(this);
-        if (visitedExprState == VALUE){
+        if (visitedExprState == VALUE)
+        {
             //the "unnecessary" assignments are to handle overflow.
             term2 = visitedLitInt;
             res = term1 + term2;
@@ -844,7 +974,8 @@ void Simulator::visitE_Sub(E_Sub *e_sub)
     {
         term1 = visitedLitInt;
         e_sub->exp_2->accept(this);
-        if (visitedExprState == VALUE){
+        if (visitedExprState == VALUE)
+        {
             //the "unnecessary" assignments are to handle overflow.
             term2 = visitedLitInt;
             res = term1 - term2;
@@ -893,7 +1024,7 @@ void Simulator::visitE_Cmp(E_Cmp *e_cmp)
 {
     /* This is gonna be a huge mess... */
 
-    char SL_e1,SL_e2,c2;
+    char SL_e1, SL_e2, c2;
     std::string SLV_e1, SLV_e2;
     int i_e1, i_e2;
     int i = 0;
@@ -945,81 +1076,83 @@ void Simulator::visitE_Cmp(E_Cmp *e_cmp)
     {
     case EQUAL:
         switch (visitedType)
-            {
-            case STD_LOGIC:
-                conditionalReturn = (SL_e1 == SL_e2);
-                break;
-            case STD_LOGIC_VECTOR:
-                conditionalReturn = (SLV_e1 == SLV_e2);
-                break;
-            case INTEGER:
-                conditionalReturn = (i_e1 == i_e2);
-                break;
-            }
+        {
+        case STD_LOGIC:
+            conditionalReturn = (SL_e1 == SL_e2);
+            break;
+        case STD_LOGIC_VECTOR:
+            conditionalReturn = (SLV_e1 == SLV_e2);
+            break;
+        case INTEGER:
+            conditionalReturn = (i_e1 == i_e2);
+            break;
+        }
         break;
     case LESS:
         switch (visitedType)
+        {
+        case STD_LOGIC:
+            conditionalReturn = (SL_e1 < SL_e2);
+            break;
+        case STD_LOGIC_VECTOR:
+            if ((SLV_e1.find('X') != std::string::npos) || (SLV_e2.find('X') != std::string::npos))
             {
-            case STD_LOGIC:
-                conditionalReturn = (SL_e1 < SL_e2);
-                break;
-            case STD_LOGIC_VECTOR:
-                if ((SLV_e1.find('X') != std::string::npos) || (SLV_e2.find('X') != std::string::npos)){
-                    //haven't solved what to do here
-                    print(WARNING, "Comparison done with not fully defined std_logic_vector, expect weird behaviour");
-                    break;
-                }
-                for (char &c1 : SLV_e1)
-                {
-                    c2 = SLV_e2.at(i);
-                    i++;
-                    if (c1 != c2)
-                    {
-                        if(c1 == '0')
-                            conditionalReturn = true;
-                        else
-                            conditionalReturn = false;
-                        break;
-                    }
-                }
-                i = 0;
-                break;
-            case INTEGER:
-                conditionalReturn = (i_e1 < i_e2);
+                //haven't solved what to do here
+                print(WARNING, "Comparison done with not fully defined std_logic_vector, expect weird behaviour");
                 break;
             }
+            for (char &c1 : SLV_e1)
+            {
+                c2 = SLV_e2.at(i);
+                i++;
+                if (c1 != c2)
+                {
+                    if (c1 == '0')
+                        conditionalReturn = true;
+                    else
+                        conditionalReturn = false;
+                    break;
+                }
+            }
+            i = 0;
+            break;
+        case INTEGER:
+            conditionalReturn = (i_e1 < i_e2);
+            break;
+        }
         break;
     case MORE:
-                switch (visitedType)
+        switch (visitedType)
+        {
+        case STD_LOGIC:
+            conditionalReturn = (SL_e1 > SL_e2);
+            break;
+        case STD_LOGIC_VECTOR:
+            if ((SLV_e1.find('X') != std::string::npos) || (SLV_e2.find('X') != std::string::npos))
             {
-            case STD_LOGIC:
-                conditionalReturn = (SL_e1 > SL_e2);
-                break;
-            case STD_LOGIC_VECTOR:
-                if ((SLV_e1.find('X') != std::string::npos) || (SLV_e2.find('X') != std::string::npos)){
-                    //haven't solved what to do here
-                    print(WARNING, "Comparison done with not fully defined std_logic_vector, expect weird behaviour");
-                    break;
-                }
-                for (char &c1 : SLV_e1)
-                {
-                    c2 = SLV_e2.at(i);
-                    i++;
-                    if (c1 != c2)
-                    {
-                        if(c1 == '0')
-                            conditionalReturn = false;
-                        else
-                            conditionalReturn = true;
-                        break;
-                    }
-                }
-                i = 0;
-                break;
-            case INTEGER:
-                conditionalReturn = (i_e1 > i_e2);
+                //haven't solved what to do here
+                print(WARNING, "Comparison done with not fully defined std_logic_vector, expect weird behaviour");
                 break;
             }
+            for (char &c1 : SLV_e1)
+            {
+                c2 = SLV_e2.at(i);
+                i++;
+                if (c1 != c2)
+                {
+                    if (c1 == '0')
+                        conditionalReturn = false;
+                    else
+                        conditionalReturn = true;
+                    break;
+                }
+            }
+            i = 0;
+            break;
+        case INTEGER:
+            conditionalReturn = (i_e1 > i_e2);
+            break;
+        }
         break;
         break;
     }
@@ -1211,7 +1344,7 @@ void Simulator::visitE_XOR(E_XOR *e_xor)
 }
 
 void Simulator::visitE_NAND(E_NAND *e_nand)
-{  
+{
     char L_op_1;
     std::string LV_op_1;
     Expr_state firstState;
@@ -1243,12 +1376,12 @@ void Simulator::visitE_NAND(E_NAND *e_nand)
         case STD_LOGIC:
             if ((L_op_1 != 'X') && (visitedLitChar != 'X'))
             {
-                    if (L_op_1 != visitedLitChar)
-                        visitedLitChar = '1';
-                    else if (L_op_1 == '1')
-                        visitedLitChar = '0';
-                    else
-                        visitedLitChar = '1';
+                if (L_op_1 != visitedLitChar)
+                    visitedLitChar = '1';
+                else if (L_op_1 == '1')
+                    visitedLitChar = '0';
+                else
+                    visitedLitChar = '1';
             }
             else
                 visitedLitChar = 'X';
@@ -1314,10 +1447,10 @@ void Simulator::visitE_NOR(E_NOR *e_nor)
         case STD_LOGIC:
             if ((L_op_1 != 'X') && (visitedLitChar != 'X'))
             {
-                    if ((L_op_1 == visitedLitChar) && (L_op_1 == '0'))
-                        visitedLitChar = '1';
-                    else
-                        visitedLitChar = '0';
+                if ((L_op_1 == visitedLitChar) && (L_op_1 == '0'))
+                    visitedLitChar = '1';
+                else
+                    visitedLitChar = '0';
             }
             else
                 visitedLitChar = 'X';
@@ -1352,8 +1485,6 @@ void Simulator::visitE_XNOR(E_XNOR *e_xnor)
 {
     /* Code For E_XNOR Goes Here */
 
-    
-    
     char L_op_1;
     std::string LV_op_1;
     Expr_state firstState;
@@ -1385,10 +1516,10 @@ void Simulator::visitE_XNOR(E_XNOR *e_xnor)
         case STD_LOGIC:
             if ((L_op_1 != 'X') && (visitedLitChar != 'X'))
             {
-                    if (L_op_1 == visitedLitChar)
-                        visitedLitChar = '1';
-                    else
-                        visitedLitChar = '0';
+                if (L_op_1 == visitedLitChar)
+                    visitedLitChar = '1';
+                else
+                    visitedLitChar = '0';
             }
             else
                 visitedLitChar = 'X';
@@ -1541,6 +1672,8 @@ void Simulator::visitListIdent(ListIdent *listident)
     for (ListIdent::iterator i = listident->begin(); i != listident->end(); ++i)
     {
         visitIdent(*i);
+        visitedIdents.push_back(*i);
+        std::cout << "added " << *i << " to process sensitivity list." << std::endl;
     }
 }
 
