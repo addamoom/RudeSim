@@ -11,7 +11,8 @@
 #include <iostream>
 #include <time.h>
 #include <unistd.h>
-#include <bits/stdc++.h> 
+#include <bits/stdc++.h>
+#include <sstream>
 
 std::vector<SignalType> rc_signals;
 std::vector<PortType> rc_ports;
@@ -26,17 +27,42 @@ int main(int argc, char **argv)
     FILE *input;
     std::string filename = "";
     int c;
-    bool printDebugInfo = false;
 
-    while ((c = getopt(argc, argv, "f:t:u:r:d")) != -1)
+    std::string cfile;
+    std::vector<std::string> filenames;
+    std::stringstream allfiles;
+
+    bool printDebugInfo = false;
+    bool parse = false;
+    bool rulecheck = false;
+    bool simulate = false;
+
+    std::vector<Prog *> parsedfiles;
+
+    while ((c = getopt(argc, argv, "f:t:u:r:dspc")) != -1)
     {
+        
         switch (c)
         {
-        case 'f': //sets a input file instead of taking it from stdin.
-            filename = optarg;
+        case 'f': //sets the input files, comma separated list with relative paths.
+            allfiles << optarg;
+            while (allfiles.good())
+            {
+                std::getline(allfiles, cfile, ',');
+                filenames.push_back(cfile);
+            }
             break;
         case 't': //sets simulation time.
             simulationTime = std::stoi(optarg);
+            break;
+        case 's': //If this flag is present, simulate
+            simulate = true;
+            break;
+        case 'p': //If this flag is present, parse
+            parse = true;
+            break;
+        case 'c': //If this flag is present, rulecheck
+            rulecheck = true;
             break;
         case 'u': //sets unit for given simulation time.
             simulationTimeUnit = optarg;
@@ -53,69 +79,90 @@ int main(int argc, char **argv)
             abort();
         };
     };
+    //print all files
+    std::cout << "Files: ";
+    for (auto i : filenames)
+        std::cout << i << ' ';
+    std::cout << "\n";
 
-    if (filename != "")
+    if (parse)
     {
-        input = fopen(filename.c_str(), "r");
-        if (!input)
+        for (auto i : filenames)
         {
-            fprintf(stderr, "Error opening input file.\n");
-            exit(1);
+            input = fopen(i.c_str(), "r");
+            if (!input)
+            {
+                fprintf(stderr, "Error opening input file.\n");
+                exit(1);
+            }
+            std::cout << "Parsing " << i << '\n';
+            Prog *parse_tree = pProg(input);
+            if (parse_tree)
+            {
+                printf("\nParse Successful!\n");
+                parsedfiles.push_back(parse_tree);
+#ifdef PRINT_DEBUG_INFO
+                printf("\n[Abstract Syntax]\n");
+                ShowAbsyn *s = new ShowAbsyn();
+                printf("%s\n\n", s->show(parse_tree));
+                printf("[Linearized Tree]\n");
+                PrintAbsyn *p = new PrintAbsyn();
+                printf("%s\n\n", p->print(parse_tree));
+#endif
+            }
+            else
+            {
+                std::cout << "ERROR";
+                return 1;
+            }
+            fclose(input);
         }
     }
-    else
-        input = stdin;
 
-    Prog *parse_tree = pProg(input);
-
-    if (parse_tree)
+    if (rulecheck)
     {
-        printf("\nParse Successful!\n");
-
-#ifdef PRINT_DEBUG_INFO
-        printf("\n[Abstract Syntax]\n");
-        ShowAbsyn *s = new ShowAbsyn();
-        printf("%s\n\n", s->show(parse_tree));
-        printf("[Linearized Tree]\n");
-        PrintAbsyn *p = new PrintAbsyn();
-        printf("%s\n\n", p->print(parse_tree));
-#endif
-    }
-    else
-    {
-        std::cout << "ERROR";
-        return 1;
+        RuleCheck ruleChecker = RuleCheck();
+        ruleChecker.printDebugInfo = printDebugInfo;
+        int n = 0;
+        for (auto i : parsedfiles)
+        {
+            std::cout << "Ruleckecking " << filenames.at(n) << std::endl;
+            n++;
+            if (ruleChecker.startRuleCheck(i) == 0)
+            {
+                std::cout << "File is Correct!" << std::endl;
+            }
+            else
+            {
+                std::cerr << "Rulechecker faced an error checking the file, see output above" << std::endl;
+            }
+        }
     }
 
-    RuleCheck ruleChecker = RuleCheck();
-    ruleChecker.printDebugInfo = printDebugInfo;
+    if (simulate)
+    {
+        Simulator sim = Simulator();
+        sim.simulation_time = sim.convertToPs(simulationTime, simulationTimeUnit);
+        sim.simulation_steps = simulationResolution;
+        sim.printDebugInfo = printDebugInfo;
+        int n = 0;
+        for (auto i : parsedfiles)
+        {
+            std::cout << "Simulating " << filenames.at(n) << std::endl;
+            n++;
+            if (sim.startSimulation(i) == 0)
+            {
+                std::cout << "Simulation finished successfully" << std::endl;
+            }
+            else
+            {
+                std::cerr << "Simulator was unsuccessfull" << std::endl;
+                return 3;
+            }
 
-    if (ruleChecker.startRuleCheck(parse_tree) == 0)
-    {
-        std::cout << "Input is up to spec. Moving on to simulate!" << std::endl;
+        }
     }
-    else
-    {
-        std::cerr << "Rulechecker faced an error parsing the file, stopping the simulator" << std::endl;
-        return 2;
-    }
-    rc_signals = ruleChecker.signals;
-    rc_ports = ruleChecker.entity_ports;
 
-    Simulator sim = Simulator();
-    sim.simulation_time = sim.convertToPs(simulationTime, simulationTimeUnit);
-    sim.simulation_steps = simulationResolution;
-    sim.printDebugInfo = printDebugInfo;
-    if (sim.startSimulation(parse_tree) == 0)
-    {
-        std::cout << "Simulation finished successfully" << std::endl;
-    }
-    else
-    {
-        std::cerr << "Simulator was unsuccessfull" << std::endl;
-        return 2;
-    }
     std::cout << "Time elapsed: " << (double)(clock() - start) / (double)CLOCKS_PER_SEC << std::endl;
-
     return 0;
 }

@@ -33,8 +33,6 @@ void Simulator::visitCmpop(Cmpop *t) {}                                 //abstra
 void Simulator::visitLiteral(Literal *t) {}                             //abstract class
 void Simulator::visitType(Type *t) {}                                   //abstract class
 
-//extern std::vector<SignalType> rc_signals;
-//extern std::vector<PortType> rc_ports;
 
 //Simulation parameters
 

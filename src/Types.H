@@ -63,6 +63,7 @@ struct ArchType
 {
     std::string label;
     std::string entity;
+    Arch *arch;
 
     ArchType(std::string l, std::string e)
     {

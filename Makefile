@@ -58,5 +58,10 @@ TestSyntax: ${OBJS} Test.o
 	${CC} ${CCFLAGS} ${OBJS} Test.o -o TestSyntax
 	cat tests/testfile.vhdl | ./TestSyntax
 
-TestRudeSim: RudeSim
-	cat tests/testfile.vhdl | ./RudeSim -d
+#TestRudeSim: RudeSim
+#	cat tests/testfile.vhdl | ./RudeSim -d
+
+TestParsing: RudeSim
+	./RudeSim -f "tests/testfile.vhdl,tests/testfile2.vhdl,tests/testfile3.vhdl" -dp
+TestRulechecking: RudeSim
+	./RudeSim -f "tests/testfile.vhdl,tests/testfile2.vhdl,tests/testfile3.vhdl" -dpc

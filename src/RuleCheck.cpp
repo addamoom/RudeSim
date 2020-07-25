@@ -56,6 +56,7 @@ void RuleCheck::print(PrintType p, std::string s)
 
 int RuleCheck::startRuleCheck(Visitable *t)
 {
+    returnvalue = 0;
     t->accept(this);
     return returnvalue;
 }
@@ -123,6 +124,8 @@ void RuleCheck::visitEntity(Entity *entity)
     entities.push_back(entity->ident_1);
 
     entity->listports_->accept(this);
+    f_entities.push_back(EntityType(entity->ident_1, entity_ports));
+    entity_ports.clear();
 }
 
 void RuleCheck::visitArch(Arch *arch)
@@ -154,11 +157,20 @@ void RuleCheck::visitArch(Arch *arch)
     }
     archs.push_back(ArchType(arch->ident_1, arch->ident_2));
 
-    visitIdent(arch->ident_1);
-    visitIdent(arch->ident_2);
+    //add entity ports to current symbol scope.
+    for(auto e: f_entities){
+        if(e.label == arch->ident_2){
+            for(auto p: e.ports){
+                symbols.push_back(p.identifier);
+            }
+        }
+    }
+
+
     arch->listpre_begin_statements_->accept(this);
     arch->listpost_begin_statements_->accept(this);
-    visitIdent(arch->ident_3);
+    //clear symbol scope
+    symbols.clear();
 }
 
 void RuleCheck::visitInport(Inport *inport)
@@ -171,7 +183,6 @@ void RuleCheck::visitInport(Inport *inport)
     visitIdent(inport->ident_);
     inport->type_->accept(this);
     checkSymbolUniqueness(inport->ident_);
-    symbols.push_back(inport->ident_);
     entity_ports.push_back(PortType(inport->ident_, visitedType, IN));
 }
 
@@ -186,7 +197,6 @@ void RuleCheck::visitOutport(Outport *outport)
     outport->type_->accept(this);
 
     checkSymbolUniqueness(outport->ident_);
-    symbols.push_back(outport->ident_);
     entity_ports.push_back(PortType(outport->ident_, visitedType, OUT));
 }
 
@@ -201,7 +211,6 @@ void RuleCheck::visitInoutport(Inoutport *inoutport)
     inoutport->type_->accept(this);
 
     checkSymbolUniqueness(inoutport->ident_);
-    symbols.push_back(inoutport->ident_);
     entity_ports.push_back(PortType(inoutport->ident_, visitedType, INOUT));
 }
 

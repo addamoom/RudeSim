@@ -101,9 +101,12 @@ public:
 
     bool printDebugInfo = false;
 
+    
+
 private:
     int returnvalue = 0;               // set this to one if errors are detected.
-    std::vector<std::string> entities; //List of entities in the file.
+    std::vector<std::string> entities; //List of entities in the file. still here so we dont have to rewrite stuff rn but could be replaced with the one below everywhere.
+    std::vector<EntityType> f_entities; //List of entities in the file
     std::vector<ArchType> archs;       //List of Architectures in file.
 
     std::vector<std::string> symbols; //List of all declared symbols, e.g. ports and signals, in current scope. (scope not implemented yet)
