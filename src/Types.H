@@ -70,6 +70,7 @@ struct ArchType
         label = l;
         entity = e;
     }
+    ArchType(){}
 };
 struct EntityType
 {

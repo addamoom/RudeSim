@@ -11,7 +11,6 @@ ARCHITECTURE test OF testThing2 IS
     SIGNAL a : STD_LOGIC ;
     SIGNAL b : STD_LOGIC ;
     SIGNAL c : STD_LOGIC ;
-    SIGNAL a : STD_LOGIC ;
 BEGIN
     a <= '0', '1' AFTER 2 ps;
     lab: PROCESS(a)

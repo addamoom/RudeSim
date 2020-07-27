@@ -65,3 +65,5 @@ TestParsing: RudeSim
 	./RudeSim -f "tests/testfile.vhdl,tests/testfile2.vhdl,tests/testfile3.vhdl" -dp
 TestRulechecking: RudeSim
 	./RudeSim -f "tests/testfile.vhdl,tests/testfile2.vhdl,tests/testfile3.vhdl" -dpc
+TestSimulation: RudeSim
+	./RudeSim -f "tests/testfile.vhdl,tests/testfile2.vhdl,tests/testfile3.vhdl" -e "testThing" -dpcs

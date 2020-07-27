@@ -31,6 +31,7 @@ int main(int argc, char **argv)
     std::string cfile;
     std::vector<std::string> filenames;
     std::stringstream allfiles;
+    std::string simEntity;
 
     bool printDebugInfo = false;
     bool parse = false;
@@ -39,7 +40,7 @@ int main(int argc, char **argv)
 
     std::vector<Prog *> parsedfiles;
 
-    while ((c = getopt(argc, argv, "f:t:u:r:dspc")) != -1)
+    while ((c = getopt(argc, argv, "f:t:u:r:e:dspc")) != -1)
     {
         
         switch (c)
@@ -51,6 +52,9 @@ int main(int argc, char **argv)
                 std::getline(allfiles, cfile, ',');
                 filenames.push_back(cfile);
             }
+            break;
+        case 'e': //sets simulation entity
+            simEntity = optarg;
             break;
         case 't': //sets simulation time.
             simulationTime = std::stoi(optarg);
@@ -145,21 +149,15 @@ int main(int argc, char **argv)
         sim.simulation_time = sim.convertToPs(simulationTime, simulationTimeUnit);
         sim.simulation_steps = simulationResolution;
         sim.printDebugInfo = printDebugInfo;
-        int n = 0;
-        for (auto i : parsedfiles)
+        sim.topLevelEntity = simEntity;
+        if (sim.startSimulation(parsedfiles) == 0)
         {
-            std::cout << "Simulating " << filenames.at(n) << std::endl;
-            n++;
-            if (sim.startSimulation(i) == 0)
-            {
-                std::cout << "Simulation finished successfully" << std::endl;
-            }
-            else
-            {
-                std::cerr << "Simulator was unsuccessfull" << std::endl;
-                return 3;
-            }
-
+            std::cout << "Simulation finished successfully" << std::endl;
+        }
+        else
+        {
+            std::cerr << "Simulator was unsuccessfull" << std::endl;
+            return 3;
         }
     }
 

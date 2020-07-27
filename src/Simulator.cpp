@@ -258,12 +258,104 @@ void Simulator::printState(simulation_state s)
               << std::endl;
 }
 
-int Simulator::startSimulation(Visitable *t)
+int Simulator::startSimulation(std::vector<Prog *> visitables)
 {
-    //This method is pretty self explanatory. Call this and the simulation starts. Boom. Magic.
-    //The returnvalue should be 0 on successful simulation
+    //first we visit all the files. Information about entities and architectures will be recorded, but the content of the
+    //architectures will not be visited (the part inside the BEGIN statements), but rather saved so that we can visit it later. 
+    int whilecounter = 1;
+    bool all_signals_are_updated = false;
+    EntityType current_entity;
+    int currentTime;
 
-    t->accept(this);
+    for(auto v: visitables){
+        v->accept(this);
+    }
+
+    //now we have all the info we need. Now we need to start simulating the top level entity.
+
+    //find the top level entity in the entity list
+
+    for (auto e : entities)
+    {
+        if (e.label == topLevelEntity)
+        {
+            current_entity = e;
+        }
+    }
+
+    print(DEBUGINFO, "Found the top level Entity: " + current_entity.label);
+
+    //add ports to state and type table
+    for (auto p : current_entity.ports)
+    {
+        if (p.type == STD_LOGIC)
+        {
+            init_state.std_logics.push_back(std_logic_state(p.identifier, 'X'));
+            symbolTypeTable[p.identifier] = p.type;
+        }
+        else if (p.type == STD_LOGIC_VECTOR)
+        {
+            init_state.std_logic_vectors.push_back(std_logic_vector_state(p.identifier, "X"));
+            symbolTypeTable[p.identifier] = p.type;
+        }
+        else //INTEGER
+        {
+            init_state.integers.push_back(integer_state(p.identifier, -2147483648));
+            symbolTypeTable[p.identifier] = p.type;
+        }
+    }
+
+    //find the architecture that corresponds to the top level entity.
+    ArchType currentArch;
+    for (auto a : archs)
+    {
+        if(a.entity == current_entity.label)
+            currentArch = a;
+    }
+
+    //add all Signal declarations to state
+    currentArch.arch->listpre_begin_statements_->accept(this);
+
+    current_state = init_state; //redundant but quick fix for printing
+    print(DEBUGINFO, "\n--------------------Init state ------------------------");
+    print(CURRENTSTATE, "");
+    simulation_states.push_back(init_state);
+
+    //now all signals should be initialized. lets move on to simulation
+    //this is basically the old sim system inside the new dispatcher. should probably be rewritten soon, but it will do for now since
+    //i need to test the new dispatching
+    for (int i = 1; i < simulation_steps + 1; i++)
+    {
+        current_state = simulation_states.at(i - 1);
+        current_time = i * simulation_time / simulation_steps;
+        for (auto &a : symbolDoneTable)
+            a.second = false;
+        all_signals_are_updated = false;
+        symbolAssignTable.clear();
+
+        print(DEBUGINFO, "\n--------------------Simulation state " + std::to_string(i) + "------------------------");
+        whilecounter = 0;
+        while (!all_signals_are_updated)
+        {
+            print(DEBUGINFO, "Step Iteration " + std::to_string(whilecounter) + " events:");
+            whilecounter++;
+            currentArch.arch->listpost_begin_statements_->accept(this);
+            all_signals_are_updated = check_if_all_signals_are_updated();
+        }
+        //For some cases we actually need to go another time, so we do that! Not a complete fix but atleast partial.
+        print(DEBUGINFO, "Step Iteration " + std::to_string(whilecounter) + " events:");
+        whilecounter++;
+        currentArch.arch->listpost_begin_statements_->accept(this);
+
+        simulation_states.push_back(current_state);
+        print(DEBUGINFO, "Completed state status:");
+        printState(current_state);
+    }
+
+    //Generate the vcd file
+    simulation_state X = simulation_states[0];
+    generateVCD(&simulation_states, simulation_time / simulation_steps);
+
     return returnvalue;
 }
 
@@ -306,90 +398,93 @@ void Simulator::visitArch(Arch *arch)
 {
     /* Code For Arch Goes Here */
 
-    bool all_signals_are_updated = false;
-    EntityType current_entity;
-    int currentTime;
-    simulation_state current_state_copy;
-    int whilecounter = 1;
+    //bool all_signals_are_updated = false;
+    //EntityType current_entity;
+    //int currentTime;
+    //simulation_state current_state_copy;
+    //int whilecounter = 1;
     //visitIdent(arch->ident_1);
     //visitIdent(arch->ident_2);
     //visitIdent(arch->ident_3);
 
     //find current entity
-    for (auto e : entities)
-    {
-        if (e.label == arch->ident_2)
-        {
-            current_entity = e;
-        }
-    }
+    //for (auto e : entities)
+    //{
+    //    if (e.label == arch->ident_2)
+    //    {
+    //        current_entity = e;
+    //    }
+    //}
 
     //add ports to state and type table
 
-    for (auto p : current_entity.ports)
-    {
-        if (p.type == STD_LOGIC)
-        {
-            init_state.std_logics.push_back(std_logic_state(p.identifier, 'X'));
-            symbolTypeTable[p.identifier] = p.type;
-        }
-        else if (p.type == STD_LOGIC_VECTOR)
-        {
-            init_state.std_logic_vectors.push_back(std_logic_vector_state(p.identifier, "X"));
-            symbolTypeTable[p.identifier] = p.type;
-        }
-        else //INTEGER
-        {
-            init_state.integers.push_back(integer_state(p.identifier, -2147483648));
-            symbolTypeTable[p.identifier] = p.type;
-        }
-    }
-
+    //for (auto p : current_entity.ports)
+    //{
+    //    if (p.type == STD_LOGIC)
+    //    {
+    //        init_state.std_logics.push_back(std_logic_state(p.identifier, 'X'));
+    //        symbolTypeTable[p.identifier] = p.type;
+    //    }
+    //    else if (p.type == STD_LOGIC_VECTOR)
+    //    {
+    //        init_state.std_logic_vectors.push_back(std_logic_vector_state(p.identifier, "X"));
+    //        symbolTypeTable[p.identifier] = p.type;
+    //    }
+    //    else //INTEGER
+    //    {
+    //        init_state.integers.push_back(integer_state(p.identifier, -2147483648));
+    //        symbolTypeTable[p.identifier] = p.type;
+    //    }
+    //}
+//
     //add all Signal declarations to state
-    arch->listpre_begin_statements_->accept(this);
+    //arch->listpre_begin_statements_->accept(this);
     //done.
 
-    current_state = init_state; //redundant but quick fix for printing
-    print(DEBUGINFO, "\n--------------------Init state ------------------------");
-    print(CURRENTSTATE, "");
-    simulation_states.push_back(init_state);
-
-    //now all signals should be initialized. lets move on to simulation
-    //this is a big mess and shold be moved to a separate dispatcher that can handle simulating several arches at the same time.
-    for (int i = 1; i < simulation_steps + 1; i++)
-    {
-        current_state = simulation_states.at(i - 1);
-        current_time = i * simulation_time / simulation_steps;
-        for (auto &a : symbolDoneTable)
-            a.second = false;
-        all_signals_are_updated = false;
-        symbolAssignTable.clear();
-
-        print(DEBUGINFO, "\n--------------------Simulation state " + std::to_string(i) + "------------------------");
-        whilecounter = 0;
-        while (!all_signals_are_updated)
-        {
-            print(DEBUGINFO, "Step Iteration " + std::to_string(whilecounter) + " events:");
-            whilecounter++;
-            //current_state_copy = current_state;
-            arch->listpost_begin_statements_->accept(this);
-            all_signals_are_updated = check_if_all_signals_are_updated();
-
-            //kontrollera currstate efter förändringar
-        }
-        //for some cases we actually need to go another time, so we do that!
-        print(DEBUGINFO, "Step Iteration " + std::to_string(whilecounter) + " events:");
-        whilecounter++;
-        arch->listpost_begin_statements_->accept(this);
-
-        simulation_states.push_back(current_state);
-        print(DEBUGINFO, "Completed state status:");
-        printState(current_state);
-    }
-
-    simulation_state X = simulation_states[0];
-
-    generateVCD(&simulation_states, simulation_time / simulation_steps);
+    //current_state = init_state; //redundant but quick fix for printing
+    //print(DEBUGINFO, "\n--------------------Init state ------------------------");
+    //print(CURRENTSTATE, "");
+    //simulation_states.push_back(init_state);
+//
+    ////now all signals should be initialized. lets move on to simulation
+    ////this is a big mess and shold be moved to a separate dispatcher that can handle simulating several arches at the same time.
+    //for (int i = 1; i < simulation_steps + 1; i++)
+    //{
+    //    current_state = simulation_states.at(i - 1);
+    //    current_time = i * simulation_time / simulation_steps;
+    //    for (auto &a : symbolDoneTable)
+    //        a.second = false;
+    //    all_signals_are_updated = false;
+    //    symbolAssignTable.clear();
+//
+    //    print(DEBUGINFO, "\n--------------------Simulation state " + std::to_string(i) + "------------------------");
+    //    whilecounter = 0;
+    //    while (!all_signals_are_updated)
+    //    {
+    //        print(DEBUGINFO, "Step Iteration " + std::to_string(whilecounter) + " events:");
+    //        whilecounter++;
+    //        //current_state_copy = current_state;
+    //        arch->listpost_begin_statements_->accept(this);
+    //        all_signals_are_updated = check_if_all_signals_are_updated();
+//
+    //        //kontrollera currstate efter förändringar
+    //    }
+    //    //for some cases we actually need to go another time, so we do that!
+    //    print(DEBUGINFO, "Step Iteration " + std::to_string(whilecounter) + " events:");
+    //    whilecounter++;
+    //    arch->listpost_begin_statements_->accept(this);
+//
+    //    simulation_states.push_back(current_state);
+    //    print(DEBUGINFO, "Completed state status:");
+    //    printState(current_state);
+    //}
+//
+    //simulation_state X = simulation_states[0];
+//
+    //generateVCD(&simulation_states, simulation_time / simulation_steps);
+    ArchType a = ArchType(arch->ident_1, arch->ident_2);
+    a.arch = arch;
+    archs.push_back(a);
 }
 
 void Simulator::visitInport(Inport *inport)

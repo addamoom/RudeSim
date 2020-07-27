@@ -95,11 +95,13 @@ public:
     void visitIdent(Ident x);
 
     void generateVCD(std::vector<simulation_state> *i, long int t);
-    int startSimulation(Visitable *t);
+    int startSimulation(std::vector<Prog *> visitables);
     long int convertToPs(int i, std::string u);
     long int simulation_time = 5; //time the simulation should run, in ps.
     int simulation_steps = 50000; //no of discrete time steps in simulation.
     bool printDebugInfo;          //Determines wheter debug info should be printed or not
+    std::string topLevelEntity;
+    std::vector<ArchType> archs;       //List of Architectures in file.
 
 private:
     int returnvalue = 0; // set this to one if errors are detected.
