@@ -42,12 +42,14 @@ simulation_state process_state;                  //Holds the changes to signals 
 std::vector<simulation_state> simulation_states; //All the simulation states.
 long int current_time;
 
+
 //Symbol Information
 std::map<std::string, bool> symbolDoneTable;         //is the value of a symbol accurate in this time frame? always check this table before assigning
 std::map<std::string, bool> symbolAssignTable;       //should a symbol actually be updated this time frame? if the symbol is in here and returns true then yes.
 std::map<std::string, Signal_Types> symbolTypeTable; //Holds the type of each symbol
 std::vector<PortType> current_portlist;              //holds temporary information about ports, which is then written into entity information
 std::map<std::string, int> std_logic_vector_lengths; //Holds the length of all logic vectors.
+EntityType current_entity;
 
 //Expressions and visitor returns
 Signal_Types visitedType;     //when a visit to a type occurs, this is used to return that type
@@ -189,7 +191,7 @@ void Simulator::assignSignalfromLit(std::string i, simulation_state *st)
     case STD_LOGIC:
         for (auto &s : st->std_logics) //the & gives a reference instead of copy, so we can change the value.
         {
-            if (s.identifier == i)
+            if (s.identifier == (current_entity.label + "." + i))
             {
                 s.value = visitedLitChar;
                 print(DEBUGINFO, "Assigning signal " + i + " the value \'" + visitedLitChar + "\'");
@@ -199,7 +201,7 @@ void Simulator::assignSignalfromLit(std::string i, simulation_state *st)
     case STD_LOGIC_VECTOR:
         for (auto &s : st->std_logic_vectors) //the & gives a reference instead of copy, so we can change the value.
         {
-            if (s.identifier == i)
+            if (s.identifier == current_entity.label + "." + i)
             {
                 s.value = visitedLitString;
                 print(DEBUGINFO, "Assigning signal " + i + " the value \'" + visitedLitString + "\'");
@@ -209,7 +211,7 @@ void Simulator::assignSignalfromLit(std::string i, simulation_state *st)
     case INTEGER:
         for (auto &s : st->integers) //the & gives a reference instead of copy, so we can change the value.
         {
-            if (s.identifier == i)
+            if (s.identifier == current_entity.label + "." + i)
             {
                 s.value = visitedLitInt;
                 print(DEBUGINFO, "Assigning signal " + i + " the value \'" + std::to_string(visitedLitInt) + "\'");
@@ -264,7 +266,6 @@ int Simulator::startSimulation(std::vector<Prog *> visitables)
     //architectures will not be visited (the part inside the BEGIN statements), but rather saved so that we can visit it later. 
     int whilecounter = 1;
     bool all_signals_are_updated = false;
-    EntityType current_entity;
     int currentTime;
 
     for(auto v: visitables){
@@ -290,17 +291,17 @@ int Simulator::startSimulation(std::vector<Prog *> visitables)
     {
         if (p.type == STD_LOGIC)
         {
-            init_state.std_logics.push_back(std_logic_state(p.identifier, 'X'));
+            init_state.std_logics.push_back(std_logic_state(current_entity.label + "." + p.identifier, 'X'));
             symbolTypeTable[p.identifier] = p.type;
         }
         else if (p.type == STD_LOGIC_VECTOR)
         {
-            init_state.std_logic_vectors.push_back(std_logic_vector_state(p.identifier, "X"));
+            init_state.std_logic_vectors.push_back(std_logic_vector_state(current_entity.label + "." + p.identifier, "X"));
             symbolTypeTable[p.identifier] = p.type;
         }
         else //INTEGER
         {
-            init_state.integers.push_back(integer_state(p.identifier, -2147483648));
+            init_state.integers.push_back(integer_state(current_entity.label + "." + p.identifier, -2147483648));
             symbolTypeTable[p.identifier] = p.type;
         }
     }
@@ -537,19 +538,19 @@ void Simulator::visitSignal_Decl(Signal_Decl *signal_decl)
     signal_decl->type_->accept(this);
     if (visitedType == STD_LOGIC)
     {
-        init_state.std_logics.push_back(std_logic_state(signal_decl->ident_, 'X'));
+        init_state.std_logics.push_back(std_logic_state(current_entity.label + "." + signal_decl->ident_, 'X'));
         symbolTypeTable[signal_decl->ident_] = STD_LOGIC;
     }
     else if (visitedType == STD_LOGIC_VECTOR)
     {
-        init_state.std_logic_vectors.push_back(std_logic_vector_state(signal_decl->ident_, "X"));
+        init_state.std_logic_vectors.push_back(std_logic_vector_state(current_entity.label + "." + signal_decl->ident_, "X"));
         symbolTypeTable[signal_decl->ident_] = STD_LOGIC_VECTOR;
         std::cout << visitedVectorLength << std::endl;
         std_logic_vector_lengths[signal_decl->ident_] = visitedVectorLength;
     }
     else //INTEGER
     {
-        init_state.integers.push_back(integer_state(signal_decl->ident_, -2147483648));
+        init_state.integers.push_back(integer_state(current_entity.label + "." + signal_decl->ident_, -2147483648));
         symbolTypeTable[signal_decl->ident_] = INTEGER;
     }
 }
@@ -563,19 +564,19 @@ void Simulator::visitSignal_Decl_W_Assign(Signal_Decl_W_Assign *signal_decl_w_as
     signal_decl_w_assign->literal_->accept(this);
     if (visitedType == STD_LOGIC)
     {
-        init_state.std_logics.push_back(std_logic_state(signal_decl_w_assign->ident_, visitedLitChar));
+        init_state.std_logics.push_back(std_logic_state( current_entity.label + "." + signal_decl_w_assign->ident_, visitedLitChar));
         symbolTypeTable[signal_decl_w_assign->ident_] = STD_LOGIC;
     }
     else if (visitedType == STD_LOGIC_VECTOR)
     {
-        init_state.std_logic_vectors.push_back(std_logic_vector_state(signal_decl_w_assign->ident_, visitedLitString));
+        init_state.std_logic_vectors.push_back(std_logic_vector_state(current_entity.label + "." + signal_decl_w_assign->ident_, visitedLitString));
         symbolTypeTable[signal_decl_w_assign->ident_] = STD_LOGIC_VECTOR;
         std::cout << visitedVectorLength << std::endl;
         std_logic_vector_lengths[signal_decl_w_assign->ident_] = visitedVectorLength;
     }
     else //INTEGER
     {
-        init_state.integers.push_back(integer_state(signal_decl_w_assign->ident_, visitedLitInt));
+        init_state.integers.push_back(integer_state(current_entity.label + "." + signal_decl_w_assign->ident_, visitedLitInt));
         symbolTypeTable[signal_decl_w_assign->ident_] = INTEGER;
     }
 }
@@ -597,15 +598,15 @@ void Simulator::visitConstant_Decl_W_Assign(Constant_Decl_W_Assign *constant_dec
 
     if (visitedType == STD_LOGIC)
     {
-        init_state.std_logics.push_back(std_logic_state(constant_decl_w_assign->ident_, visitedLitChar));
+        init_state.std_logics.push_back(std_logic_state( current_entity.label + "." + constant_decl_w_assign->ident_, visitedLitChar));
     }
     else if (visitedType == STD_LOGIC_VECTOR)
     {
-        init_state.std_logic_vectors.push_back(std_logic_vector_state(constant_decl_w_assign->ident_, visitedLitString));
+        init_state.std_logic_vectors.push_back(std_logic_vector_state(current_entity.label + "." + constant_decl_w_assign->ident_, visitedLitString));
     }
     else //INTEGER
     {
-        init_state.integers.push_back(integer_state(constant_decl_w_assign->ident_, visitedLitInt));
+        init_state.integers.push_back(integer_state(current_entity.label + "." + constant_decl_w_assign->ident_, visitedLitInt));
     }
 }
 
@@ -763,11 +764,11 @@ void Simulator::visitProcess_Statement(Process_Statement *process_statement)
         case STD_LOGIC:
             for (auto v : simulation_states.back().std_logics)
             {
-                if (v.identifier == s)
+                if (v.identifier == (current_entity.label + "." + s))
                 {
                     for (auto p : current_state.std_logics)
                     {
-                        if (p.identifier == s)
+                        if (p.identifier == (current_entity.label + "." + s))
                         {
                             if (p.value != v.value)
                             {
@@ -784,11 +785,11 @@ void Simulator::visitProcess_Statement(Process_Statement *process_statement)
         case STD_LOGIC_VECTOR:
             for (auto v : simulation_states.back().std_logic_vectors)
             {
-                if (v.identifier == s)
+                if (v.identifier == (current_entity.label + "." + s))
                 {
                     for (auto p : current_state.std_logic_vectors)
                     {
-                        if (p.identifier == s)
+                        if (p.identifier == (current_entity.label + "." +s))
                         {
                             if (p.value != v.value)
                             {
@@ -803,11 +804,11 @@ void Simulator::visitProcess_Statement(Process_Statement *process_statement)
         case INTEGER:
             for (auto v : simulation_states.back().integers)
             {
-                if (v.identifier == s)
+                if (v.identifier == (current_entity.label + "." + s))
                 {
                     for (auto p : current_state.integers)
                     {
-                        if (p.identifier == s)
+                        if (p.identifier == (current_entity.label + "." +s))
                         {
                             if (p.value != v.value)
                             {
